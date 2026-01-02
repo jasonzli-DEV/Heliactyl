@@ -17,6 +17,7 @@ interface EggData {
   displayName: string;
   description: string | null;
   nestId: number;
+  nestName?: string;
   pterodactylId: number;
 }
 
@@ -133,6 +134,8 @@ export default function CreateServer() {
   const selectEgg = (egg: EggData) => {
     setForm(prev => ({ ...prev, eggId: egg.id }));
     fetchVariables(egg.id);
+    // Auto-collapse all nest sections after selection
+    setExpandedNests(new Set());
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -241,7 +244,7 @@ export default function CreateServer() {
                         <ChevronRight className="w-4 h-4 text-gray-400" />
                       )}
                       <Folder className="w-4 h-4 text-accent-400" />
-                      <span className="font-medium text-white">Nest #{nestId}</span>
+                      <span className="font-medium text-white">{nestEggs[0]?.nestName || `Nest #${nestId}`}</span>
                       <span className="text-sm text-gray-500">({nestEggs.length} types)</span>
                     </div>
                   </button>

@@ -214,7 +214,7 @@ export default function Account() {
             ) : (
               <>
                 <Key className="w-4 h-4" />
-                Reset Panel Password
+                Forgot Password or Never Set?
               </>
             )}
           </button>

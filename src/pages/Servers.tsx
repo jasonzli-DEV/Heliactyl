@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins } from 'lucide-react';
+import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins, Key, Mail, Copy, CheckCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface ServerData {
   id: string;
@@ -26,10 +27,14 @@ interface ServerData {
 }
 
 export default function Servers() {
+  const { user } = useAuth();
   const [servers, setServers] = useState<ServerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [billingEnabled, setBillingEnabled] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetchServers();
@@ -74,19 +79,121 @@ export default function Servers() {
     }
   };
 
+  const resetPassword = async () => {
+    setResettingPassword(true);
+    setNewPassword(null);
+    try {
+      const res = await fetch('/api/user/reset-password', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNewPassword(data.password);
+      } else {
+        alert(data.error || 'Failed to reset password');
+      }
+    } catch (error) {
+      alert('Failed to reset password');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const copyPassword = () => {
+    if (newPassword) {
+      navigator.clipboard.writeText(newPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Your Servers</h1>
-          <p className="text-gray-400">Manage and monitor your game servers.</p>
+          <p className="text-gray-400">Manage your game servers.</p>
         </div>
         <Link to="/servers/create" className="btn-primary">
           <Plus className="w-4 h-4" />
           Create Server
         </Link>
       </div>
+
+      {/* Pterodactyl Panel Info */}
+      {user?.pterodactylId && (
+        <div className="card p-6 mb-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Panel Access</h2>
+          <p className="text-gray-400 mb-4">
+            Use the following credentials to login to your EnderBit panel.
+          </p>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Email:</label>
+              <div className="flex items-center gap-2 p-3 bg-dark-700 rounded-lg">
+                <Mail className="w-4 h-4 text-gray-500" />
+                <span className="text-white font-mono">{user.email || 'Not set'}</span>
+              </div>
+            </div>
+
+            {newPassword && (
+              <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <div className="flex items-center gap-2 text-green-400 mb-2">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-medium">Password Reset Successful!</span>
+                </div>
+                <p className="text-sm text-gray-400 mb-3">
+                  Your new password is shown below. <strong>Save it now</strong> - it will only be shown once!
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 p-3 bg-dark-800 rounded-lg text-white font-mono text-sm break-all">
+                    {newPassword}
+                  </code>
+                  <button
+                    onClick={copyPassword}
+                    className="p-3 bg-dark-800 hover:bg-dark-700 rounded-lg text-gray-400 hover:text-white transition-colors"
+                    title="Copy password"
+                  >
+                    {copied ? <CheckCircle className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={resetPassword}
+                disabled={resettingPassword}
+                className="btn-secondary flex items-center gap-2"
+              >
+                {resettingPassword ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    <Key className="w-4 h-4" />
+                    Reset Password
+                  </>
+                )}
+              </button>
+              <a
+                href="https://panel.enderbit.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Game Panel
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Server list */}
       {loading ? (
@@ -124,7 +231,7 @@ export default function Servers() {
                 </div>
                 <div className="flex items-center gap-2">
                   <a
-                    href={`${process.env.PTERODACTYL_URL || ''}/server/${server.pterodactylUuid}`}
+                    href={`https://panel.enderbit.com/server/${server.pterodactylUuid}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-ghost p-2"

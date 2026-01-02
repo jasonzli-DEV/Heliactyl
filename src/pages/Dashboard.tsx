@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { Server, Cpu, HardDrive, MemoryStick, Database, Archive, Network, Coins, Plus, ShoppingCart, Ticket } from 'lucide-react';
+import { Server, Cpu, HardDrive, MemoryStick, Database, Archive, Network, Coins, Plus, ShoppingCart, Ticket, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
@@ -29,8 +29,22 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [resources, setResources] = useState<Resources | null>(null);
   const [loading, setLoading] = useState(true);
+  const [servers, setServers] = useState<any[]>([]);
+  const [billingEnabled, setBillingEnabled] = useState(false);
 
-  useEffect(() => {
+    fetchServers();
+  }, []);
+
+  const fetchServers = async () => {
+    try {
+      const res = await fetch('/api/servers', { credentials: 'include' });
+      const data = await res.json();
+      setServers(data.servers || []);
+      setBillingEnabled(data.billingEnabled || false);
+    } catch (error) {
+      console.error('Failed to fetch servers:', error);
+    }
+  }ect(() => {
     fetchResources();
   }, []);
 
@@ -113,6 +127,27 @@ export default function Dashboard() {
           Monitor your servers and billing from here.
         </p>
       </div>
+
+      {/* Low Balance Warning */}
+      {billingEnabled && servers.length > 0 && user && user.coins < 100 && (
+        <div className="card p-4 mb-6 bg-red-500/10 border-red-500/30">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-400 mb-1">Low Balance Warning</h3>
+              <p className="text-sm text-gray-300">
+                {user.coins === 0 
+                  ? "Your coin balance is empty! Your servers have been suspended and will be deleted in 24 hours if not funded."
+                  : `Your coin balance is running low (${user.coins} coins). Please purchase resources to avoid server suspension.`}
+              </p>
+              <Link to="/store" className="inline-flex items-center gap-2 mt-3 text-sm font-medium text-red-400 hover:text-red-300">
+                <ShoppingCart className="w-4 h-4" />
+                Get Resources Now
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Coins card with billing info */}
       <div className="card p-6 mb-6">
@@ -200,17 +235,17 @@ export default function Dashboard() {
               <ShoppingCart className="w-5 h-5 text-purple-400" />
             </div>
             <div>
-              <p className="font-medium text-white">Buy Coins</p>
-              <p className="text-sm text-gray-500">Top up balance</p>
+              <p className="font-medium text-white">Get Resources</p>
+              <p className="text-sm text-gray-500">Browse store packages</p>
             </div>
           </Link>
-          <Link to="/redeem" className="card-hover p-4 flex items-center gap-3">
+          <Link to="/tickets" className="card-hover p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-yellow-500/10">
               <Ticket className="w-5 h-5 text-yellow-400" />
             </div>
             <div>
-              <p className="font-medium text-white">Redeem Code</p>
-              <p className="text-sm text-gray-500">Use coupon codes</p>
+              <p className="font-medium text-white">Open Ticket</p>
+              <p className="text-sm text-gray-500">Get support help</p>
             </div>
           </Link>
         </div>

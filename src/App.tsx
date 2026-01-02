@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -35,7 +36,8 @@ export default function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <Routes>
+        <ToastProvider>
+          <Routes>
           {/* Setup route - shown if not configured */}
           <Route path="/setup" element={<Setup />} />
           
@@ -84,7 +86,7 @@ export default function App() {
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </SettingsProvider>
+        </ToastProvider>
     </AuthProvider>
   );
 }

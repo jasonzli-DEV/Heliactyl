@@ -136,7 +136,10 @@ export async function processBilling() {
             await pterodactyl.suspendPteroServer(server.pterodactylId);
             await prisma.server.update({
               where: { id: server.id },
-              data: { suspended: true },
+              data: { 
+                suspended: true,
+                suspendedAt: new Date(),
+              },
             });
           } catch (err) {
             console.error(`[Billing] Failed to suspend server ${server.pterodactylId}:`, err);
@@ -145,6 +148,36 @@ export async function processBilling() {
       }
     } catch (err) {
       console.error(`[Billing] Error processing server ${server.id}:`, err);
+    }
+  }
+  
+  // Delete servers suspended for more than 24 hours
+  const suspendedServers = await prisma.server.findMany({
+    where: { 
+      suspended: true,
+      suspendedAt: {
+        lt: new Date(now.getTime() - 24 * 60 * 60 * 1000), // 24 hours ago
+      },
+    },
+  });
+  
+  console.log(`[Billing] Found ${suspendedServers.length} servers suspended for >24h`);
+  
+  for (const server of suspendedServers) {
+    try {
+      console.log(`[Billing] Deleting suspended server ${server.name} (ID: ${server.id})`);
+      
+      // Delete from Pterodactyl
+      await pterodactyl.deletePteroServer(server.pterodactylId);
+      
+      // Delete from database
+      await prisma.server.delete({
+        where: { id: server.id },
+      });
+      
+      console.log(`[Billing] Deleted server ${server.id}`);
+    } catch (err) {
+      console.error(`[Billing] Failed to delete server ${server.id}:`, err);
     }
   }
   

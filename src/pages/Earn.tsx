@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Coins, Gift, CheckCircle, AlertCircle, Loader2, Clock, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 interface EarnStatus {
   enabled: boolean;
@@ -13,6 +14,7 @@ interface EarnStatus {
 
 export default function Earn() {
   const { user, refreshUser } = useAuth();
+  const { showToast } = useToast();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<EarnStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,10 +37,8 @@ export default function Earn() {
           icon: '/favicon.ico',
         });
       }
-      // Show alert popup as fallback
-      setTimeout(() => {
-        alert(`🎉 Success! You earned ${coins} coins!`);
-      }, 500);
+      // Show success toast
+      showToast(`🎉 Congratulations! You earned ${coins} coins!`, 'success');
       refreshUser();
       loadStatus(); // Refresh status to get new cooldown
       window.history.replaceState({}, '', '/earn');
