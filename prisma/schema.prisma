@@ -1,4 +1,4 @@
-// Heliactyl v13 - Prisma Schema
+// Enderactyl v13 - Prisma Schema
 // This schema is designed for SQLite by default but can be changed to PostgreSQL or MySQL
 
 generator client {
@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./heliactyl.db"
+  url      = "file:./enderactyl.db"
 }
 
 // ============================================================================
@@ -119,7 +119,7 @@ model Settings {
   id                    String   @id @default("main")
   
   // Site branding
-  siteName              String   @default("Heliactyl")
+  siteName              String   @default("Enderactyl")
   siteUrl               String?
   siteDescription       String?
   logo                  String?

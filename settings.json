@@ -1,6 +1,6 @@
 {
   "version": "12.7.1",
-  "name": "Heliactyl",
+  "name": "Enderactyl",
   "letter": "H",
   "defaulttheme": "default",
   "timezone": "Europe/London",
@@ -28,7 +28,7 @@
   },
   "stripe": {
     "enabled": true,
-    "note": "The key is the stripe API key and the coins is the amount per £1. If the stripe API key is invalid and stripe purchases are enabled, Heliactyl will crash when attempting to do transactions.",
+    "note": "The key is the stripe API key and the coins is the amount per £1. If the stripe API key is invalid and stripe purchases are enabled, Enderactyl will crash when attempting to do transactions.",
     "key": "100000000000000",
     "coins": 100
   },
@@ -279,7 +279,7 @@
     }
   },
   "antivpn": {
-    "note": "For antivpn to work, generate an apikey on https://proxycheck.io/. If you put no key, Heliactyl will disable antivpn.",
+    "note": "For antivpn to work, generate an apikey on https://proxycheck.io/. If you put no key, Enderactyl will disable antivpn.",
     "status": false,
     "APIKey": "Proxycheck APIKey",
     "whitelistedIPs": ["IP address"]

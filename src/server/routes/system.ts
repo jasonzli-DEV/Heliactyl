@@ -99,7 +99,7 @@ router.get('/version', asyncHandler(async (req: AuthRequest, res) => {
   }
 }));
 
-// POST /api/system/update - Pull latest from GitHub and rebuild
+// POST /api/system/update - Execute update.sh script
 router.post('/update', asyncHandler(async (req: AuthRequest, res) => {
   // Log the update attempt
   await prisma.auditLog.create({
@@ -112,72 +112,38 @@ router.post('/update', asyncHandler(async (req: AuthRequest, res) => {
   });
 
   try {
-    const steps: string[] = [];
-
-    // Step 1: Stash any local changes
+    // Execute the update script in the background
+    const updateScript = process.cwd() + '/update.sh';
+    
+    // Check if update script exists
     try {
-      await execAsync('git stash', { cwd: process.cwd() });
-      steps.push('Stashed local changes');
+      await execAsync(`test -f ${updateScript}`);
     } catch {
-      steps.push('No local changes to stash');
+      throw new Error('Update script not found. Please ensure update.sh exists in the project root.');
     }
 
-    // Step 2: Pull latest from GitHub
-    const { stdout: pullOutput } = await execAsync('git pull origin main', {
+    // Start update in background - don't wait for it
+    execAsync(`sudo bash ${updateScript} > /tmp/enderactyl-update.log 2>&1`, {
       cwd: process.cwd(),
+    }).catch((err) => {
+      console.error('Update script error:', err);
     });
-    steps.push(`Pulled latest: ${pullOutput.trim()}`);
 
-    // Step 3: Install dependencies (use npm install to preserve optional deps)
-    const { stdout: npmOutput } = await execAsync('npm install --production=false', {
-      cwd: process.cwd(),
-      timeout: 120000, // 2 minute timeout
-    });
-    steps.push('Installed dependencies');
-
-    // Step 4: Generate Prisma client
-    await execAsync('npx prisma generate', { cwd: process.cwd() });
-    steps.push('Generated Prisma client');
-
-    // Step 5: Run database migrations
-    await execAsync('npx prisma db push --accept-data-loss', { cwd: process.cwd() });
-    steps.push('Applied database migrations');
-
-    // Step 6: Build frontend (critical for UI changes)
-    const { stdout: buildClientOutput } = await execAsync('npm run build:client', {
-      cwd: process.cwd(),
-      timeout: 180000, // 3 minute timeout
-    });
-    steps.push('Built frontend');
-
-    // Step 7: Build backend
-    const { stdout: buildServerOutput } = await execAsync('npm run build:server', {
-      cwd: process.cwd(),
-      timeout: 60000, // 1 minute timeout
-    });
-    steps.push('Built backend');
-
-    // Log success
+    // Log update started (completion will be logged by script)
     await prisma.auditLog.create({
       data: {
         userId: req.user!.id,
-        action: 'SYSTEM_UPDATE_COMPLETED',
-        details: JSON.stringify({ steps }),
+        action: 'SYSTEM_UPDATE_INITIATED',
+        details: JSON.stringify({ message: 'Update script started' }),
         ipAddress: req.ip || 'unknown',
       },
     });
 
     res.json({
       success: true,
-      message: 'Update completed! The server will restart shortly.',
-      steps,
+      message: 'Update started! Server will restart automatically in ~60 seconds. Please refresh after restart.',
       restartRequired: true,
     });
-
-    // Restart the process after response is sent
-    setTimeout(() => {
-      process.exit(0); // systemd will restart the service
-    }, 1000);
 
   } catch (error: any) {
     // Log failure

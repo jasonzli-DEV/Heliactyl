@@ -1,11 +1,11 @@
 #!/bin/bash
-# Heliactyl v13 Update Script
-# This script updates Heliactyl to the latest version from GitHub
+# Enderactyl Update Script
+# This script updates Enderactyl to the latest version from GitHub
 
 set -e
 
-INSTALL_DIR="/var/www/heliactyl"
-GITHUB_REPO="https://github.com/jasonzli-DEV/Heliactyl.git"
+INSTALL_DIR="/var/www/enderactyl"
+GITHUB_REPO="https://github.com/jasonzli-DEV/Enderactyl.git"
 BRANCH="main"
 
 # Colors
@@ -22,7 +22,7 @@ info() { echo -e "${BLUE}[i]${NC} $1"; }
 
 echo ""
 echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║      Heliactyl v13 Update Script         ║${NC}"
+echo -e "${BLUE}║        Enderactyl Update Script          ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -31,9 +31,9 @@ if [[ $EUID -ne 0 ]]; then
    error "This script must be run as root"
 fi
 
-# Check if Heliactyl is installed
+# Check if Enderactyl is installed
 if [ ! -d "$INSTALL_DIR" ]; then
-    error "Heliactyl not found at $INSTALL_DIR"
+    error "Enderactyl not found at $INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
@@ -46,20 +46,20 @@ info "Current version: $CURRENT_VERSION"
 log "Checking for updates..."
 
 # Backup database
-BACKUP_DIR="/root/heliactyl-backups"
+BACKUP_DIR="/root/enderactyl-backups"
 mkdir -p "$BACKUP_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="$BACKUP_DIR/heliactyl_backup_$TIMESTAMP.db"
+BACKUP_FILE="$BACKUP_DIR/enderactyl_backup_$TIMESTAMP.db"
 
-if [ -f "prisma/heliactyl.db" ]; then
-    cp prisma/heliactyl.db "$BACKUP_FILE"
+if [ -f "prisma/enderactyl.db" ]; then
+    cp prisma/enderactyl.db "$BACKUP_FILE"
     log "Database backed up to: $BACKUP_FILE"
 fi
 
 # Enable maintenance mode (stop the service)
-if systemctl is-active --quiet heliactyl; then
-    log "Stopping Heliactyl service..."
-    systemctl stop heliactyl
+if systemctl is-active --quiet enderactyl; then
+    log "Stopping Enderactyl service..."
+    systemctl stop enderactyl
 fi
 
 # Pull latest changes
@@ -71,13 +71,13 @@ else
     # Not a git repo, backup and re-clone
     warn "Not a git repository, performing fresh clone..."
     cd /var/www
-    mv heliactyl "heliactyl_backup_$TIMESTAMP"
-    git clone "$GITHUB_REPO" heliactyl
-    cd heliactyl
+    mv enderactyl "enderactyl_backup_$TIMESTAMP"
+    git clone "$GITHUB_REPO" enderactyl
+    cd enderactyl
     
     # Restore database
     if [ -f "$BACKUP_FILE" ]; then
-        cp "$BACKUP_FILE" prisma/heliactyl.db
+        cp "$BACKUP_FILE" prisma/enderactyl.db
         log "Database restored"
     fi
 fi
@@ -99,9 +99,9 @@ npm run build
 chown -R www-data:www-data "$INSTALL_DIR"
 
 # Restart service
-if systemctl is-enabled --quiet heliactyl 2>/dev/null; then
-    log "Restarting Heliactyl service..."
-    systemctl start heliactyl
+if systemctl is-enabled --quiet enderactyl 2>/dev/null; then
+    log "Restarting Enderactyl service..."
+    systemctl start enderactyl
 fi
 
 # Get new version
@@ -114,4 +114,4 @@ info "Current version: $NEW_VERSION"
 echo ""
 
 # Cleanup old backups (keep last 5)
-find "$BACKUP_DIR" -name "heliactyl_backup_*.db" -type f | sort -r | tail -n +6 | xargs -r rm
+find "$BACKUP_DIR" -name "enderactyl_backup_*.db" -type f | sort -r | tail -n +6 | xargs -r rm

@@ -1,4 +1,4 @@
-# Heliactyl v13 Installation Guide
+# Enderactyl v13 Installation Guide
 
 ## Quick Installation (Recommended)
 
@@ -6,12 +6,12 @@ We provide an automated installation script for Ubuntu/Debian servers:
 
 ```bash
 # Download and run the installer
-bash <(curl -s https://raw.githubusercontent.com/jasonzli-DEV/Heliactyl/main/install.sh)
+bash <(curl -s https://raw.githubusercontent.com/jasonzli-DEV/Enderactyl/main/install.sh)
 ```
 
 The script will:
 - Install Node.js 20.x if not present
-- Clone the repository to `/var/www/heliactyl`
+- Clone the repository to `/var/www/enderactyl`
 - Install dependencies
 - Set up the database
 - Build the application
@@ -44,9 +44,9 @@ sudo apt-get install -y nodejs
 
 ```bash
 # Create directory and clone
-sudo mkdir -p /var/www/heliactyl
-cd /var/www/heliactyl
-sudo git clone https://github.com/jasonzli-DEV/Heliactyl.git .
+sudo mkdir -p /var/www/enderactyl
+cd /var/www/enderactyl
+sudo git clone https://github.com/jasonzli-DEV/Enderactyl.git .
 ```
 
 ### Step 3: Install Dependencies
@@ -78,23 +78,23 @@ sudo npm run build
 sudo useradd -r -s /bin/false www-data 2>/dev/null || true
 
 # Set ownership
-sudo chown -R www-data:www-data /var/www/heliactyl
+sudo chown -R www-data:www-data /var/www/enderactyl
 ```
 
 ### Step 7: Create Systemd Service
 
-Create `/etc/systemd/system/heliactyl.service`:
+Create `/etc/systemd/system/enderactyl.service`:
 
 ```ini
 [Unit]
-Description=Heliactyl Dashboard
+Description=Enderactyl Dashboard
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/heliactyl
+WorkingDirectory=/var/www/enderactyl
 ExecStart=/usr/bin/node dist/server/index.js
 Restart=always
 RestartSec=10
@@ -109,14 +109,14 @@ Enable and start the service:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable heliactyl
-sudo systemctl start heliactyl
+sudo systemctl enable enderactyl
+sudo systemctl start enderactyl
 ```
 
 Check status:
 
 ```bash
-sudo systemctl status heliactyl
+sudo systemctl status enderactyl
 ```
 
 ### Step 8: Setup Nginx (Optional)
@@ -127,7 +127,7 @@ Install Nginx:
 sudo apt install nginx certbot python3-certbot-nginx
 ```
 
-Create `/etc/nginx/sites-available/heliactyl.conf`:
+Create `/etc/nginx/sites-available/enderactyl.conf`:
 
 ```nginx
 server {
@@ -151,7 +151,7 @@ server {
 Enable site and get SSL certificate:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/heliactyl.conf /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/enderactyl.conf /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 sudo certbot --nginx -d dash.example.com
@@ -184,20 +184,20 @@ sudo certbot --nginx -d dash.example.com
 ### Using Command Line
 
 ```bash
-cd /var/www/heliactyl
+cd /var/www/enderactyl
 sudo bash update.sh
 ```
 
 Or manually:
 
 ```bash
-cd /var/www/heliactyl
+cd /var/www/enderactyl
 sudo git pull origin main
 sudo npm ci
 sudo npx prisma generate
 sudo npx prisma db push
 sudo npm run build
-sudo systemctl restart heliactyl
+sudo systemctl restart enderactyl
 ```
 
 ---
@@ -208,7 +208,7 @@ sudo systemctl restart heliactyl
 
 ```bash
 # Service logs
-sudo journalctl -u heliactyl -f
+sudo journalctl -u enderactyl -f
 
 # Nginx logs
 sudo tail -f /var/log/nginx/error.log
@@ -218,8 +218,8 @@ sudo tail -f /var/log/nginx/error.log
 
 ```bash
 # Reset database (WARNING: Deletes all data)
-cd /var/www/heliactyl
-sudo rm prisma/heliactyl.db
+cd /var/www/enderactyl
+sudo rm prisma/enderactyl.db
 sudo npx prisma db push
 ```
 
@@ -227,7 +227,7 @@ sudo npx prisma db push
 
 ```bash
 # Fix permissions
-sudo chown -R www-data:www-data /var/www/heliactyl
+sudo chown -R www-data:www-data /var/www/enderactyl
 ```
 
 ### Port Already in Use
@@ -237,16 +237,16 @@ sudo chown -R www-data:www-data /var/www/heliactyl
 sudo lsof -i :3005
 
 # Change port in systemd service
-sudo systemctl edit heliactyl
+sudo systemctl edit enderactyl
 # Add: Environment=PORT=3006
-sudo systemctl restart heliactyl
+sudo systemctl restart enderactyl
 ```
 
 ---
 
 ## Support
 
-- GitHub Issues: https://github.com/jasonzli-DEV/Heliactyl/issues
+- GitHub Issues: https://github.com/jasonzli-DEV/Enderactyl/issues
 - Discord: Contact server owner
 
 ---
@@ -256,7 +256,7 @@ sudo systemctl restart heliactyl
 1. **Use HTTPS** - Always use SSL/TLS certificates
 2. **Firewall** - Only allow ports 80, 443, and SSH
 3. **Updates** - Keep system and Node.js updated
-4. **Backups** - Regularly backup `/var/www/heliactyl/prisma/heliactyl.db`
+4. **Backups** - Regularly backup `/var/www/enderactyl/prisma/enderactyl.db`
 5. **Strong Passwords** - Use strong Discord bot tokens and API keys
 
 ---

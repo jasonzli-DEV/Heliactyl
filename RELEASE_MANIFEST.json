@@ -66,7 +66,7 @@
       ],
       "breaking": false,
       "notes": [
-        "Initial Heliactyl v13 release",
+        "Initial Enderactyl v13 release",
         "Prepaid hourly billing system",
         "Modern React + TypeScript frontend",
         "Express + Prisma backend"

@@ -1,5 +1,5 @@
 {
-  "name": "heliactyl",
+  "name": "enderactyl",
   "version": "1.0.2",
   "description": "Modern Pterodactyl client area with admin dashboard",
   "main": "dist/server/index.js",
