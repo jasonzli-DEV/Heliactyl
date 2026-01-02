@@ -235,18 +235,23 @@ export default function EditServer() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="label">Databases</label>
-                <span className="text-sm font-medium text-white">{form.databases}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-white">{form.databases}</span>
+                  <span className="text-xs text-gray-500">
+                    / {(user?.databases || 0) + server.databases} max
+                  </span>
+                </div>
               </div>
               <input
                 type="range"
                 value={form.databases}
                 onChange={(e) => setForm({ ...form, databases: parseInt(e.target.value) })}
                 min={0}
-                max={50}
+                max={(user?.databases || 0) + server.databases}
                 step={1}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(form.databases / 50) * 100}%, rgb(31, 41, 55) ${(form.databases / 50) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(form.databases / Math.max(1, (user?.databases || 0) + server.databases)) * 100}%, rgb(31, 41, 55) ${(form.databases / Math.max(1, (user?.databases || 0) + server.databases)) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>
@@ -254,18 +259,23 @@ export default function EditServer() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="label">Backups</label>
-                <span className="text-sm font-medium text-white">{form.backups}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-white">{form.backups}</span>
+                  <span className="text-xs text-gray-500">
+                    / {(user?.backups || 0) + server.backups} max
+                  </span>
+                </div>
               </div>
               <input
                 type="range"
                 value={form.backups}
                 onChange={(e) => setForm({ ...form, backups: parseInt(e.target.value) })}
                 min={0}
-                max={50}
+                max={(user?.backups || 0) + server.backups}
                 step={1}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) ${(form.backups / 50) * 100}%, rgb(31, 41, 55) ${(form.backups / 50) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) ${(form.backups / Math.max(1, (user?.backups || 0) + server.backups)) * 100}%, rgb(31, 41, 55) ${(form.backups / Math.max(1, (user?.backups || 0) + server.backups)) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>
@@ -273,18 +283,23 @@ export default function EditServer() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="label">Ports (Allocations)</label>
-                <span className="text-sm font-medium text-white">{form.allocations}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-white">{form.allocations}</span>
+                  <span className="text-xs text-gray-500">
+                    / {(user?.allocations || 0) + server.allocations} max
+                  </span>
+                </div>
               </div>
               <input
                 type="range"
                 value={form.allocations}
                 onChange={(e) => setForm({ ...form, allocations: parseInt(e.target.value) })}
                 min={1}
-                max={50}
+                max={(user?.allocations || 0) + server.allocations}
                 step={1}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(234, 179, 8) 0%, rgb(234, 179, 8) ${((form.allocations - 1) / 49) * 100}%, rgb(31, 41, 55) ${((form.allocations - 1) / 49) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(234, 179, 8) 0%, rgb(234, 179, 8) ${((form.allocations - 1) / Math.max(1, (user?.allocations || 0) + server.allocations - 1)) * 100}%, rgb(31, 41, 55) ${((form.allocations - 1) / Math.max(1, (user?.allocations || 0) + server.allocations - 1)) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>

@@ -101,20 +101,20 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
     throw createError('User not found', 404);
   }
 
-  // Calculate resource differences
-  const ramDiff = ram - server.ram;
-  const diskDiff = disk - server.disk;
-  const cpuDiff = cpu - server.cpu;
+  // Calculate resource differences for permanent resources (databases, backups, allocations)
+  const databasesDiff = databases - server.databases;
+  const backupsDiff = backups - server.backups;
+  const allocationsDiff = allocations - server.allocations;
 
-  // Check if user has enough resources for increases
-  if (ramDiff > 0 && user.ram < ramDiff) {
-    throw createError('Insufficient RAM available', 400);
+  // Check if user has enough permanent resources for increases
+  if (databasesDiff > 0 && user.databases < databasesDiff) {
+    throw createError('Insufficient databases available', 400);
   }
-  if (diskDiff > 0 && user.disk < diskDiff) {
-    throw createError('Insufficient disk available', 400);
+  if (backupsDiff > 0 && user.backups < backupsDiff) {
+    throw createError('Insufficient backups available', 400);
   }
-  if (cpuDiff > 0 && user.cpu < cpuDiff) {
-    throw createError('Insufficient CPU available', 400);
+  if (allocationsDiff > 0 && user.allocations < allocationsDiff) {
+    throw createError('Insufficient ports available', 400);
   }
 
   // Update Pterodactyl server
@@ -146,13 +146,13 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
         allocations,
       },
     }),
-    // Update user resources (refund or deduct)
+    // Update user permanent resources (refund or deduct)
     prisma.user.update({
       where: { id: user.id },
       data: {
-        ram: user.ram - ramDiff,
-        disk: user.disk - diskDiff,
-        cpu: user.cpu - cpuDiff,
+        databases: user.databases - databasesDiff,
+        backups: user.backups - backupsDiff,
+        allocations: user.allocations - allocationsDiff,
       },
     }),
     // Log action
@@ -162,7 +162,7 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
         action: 'SERVER_UPDATED',
         details: JSON.stringify({
           serverId: server.id,
-          changes: { ram: ramDiff, disk: diskDiff, cpu: cpuDiff },
+          changes: { ram, disk, cpu, databases: databasesDiff, backups: backupsDiff, allocations: allocationsDiff },
         }),
         ipAddress: req.ip || 'unknown',
       },
