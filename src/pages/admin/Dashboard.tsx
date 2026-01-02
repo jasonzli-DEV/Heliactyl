@@ -103,7 +103,7 @@ export default function AdminDashboard() {
                   <span className="text-sm font-medium text-gray-400">{label}</span>
                 </div>
                 <p className="text-3xl font-bold text-white">
-                  {value.toLocaleString()}
+                  {(value ?? 0).toLocaleString()}
                 </p>
               </div>
             ))}

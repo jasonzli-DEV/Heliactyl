@@ -101,9 +101,44 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
 }
 
 export async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  if (!req.user?.isAdmin) {
+  // First authenticate the user
+  const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const decoded = await verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  // Verify user still exists and is not banned
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.id },
+  });
+
+  if (!user) {
+    return res.status(401).json({ error: 'User not found' });
+  }
+
+  if (user.banned) {
+    return res.status(403).json({ error: 'Account banned', reason: user.banReason });
+  }
+
+  // Check admin status from database (not JWT)
+  if (!user.isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });
   }
+
+  req.user = {
+    id: user.id,
+    discordId: user.discordId,
+    username: user.username,
+    email: user.email || '',
+    isAdmin: user.isAdmin,
+  };
+
   next();
 }
 

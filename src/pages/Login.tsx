@@ -92,18 +92,7 @@ export default function Login() {
           )}
         </div>
 
-        {/* Footer */}
-        <p className="mt-8 text-center text-xs text-gray-600">
-          Powered by{' '}
-          <a
-            href="https://github.com/heliactyl/heliactyl"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-500 hover:text-gray-400"
-          >
-            Heliactyl v13
-          </a>
-        </p>
+
       </div>
     </div>
   );

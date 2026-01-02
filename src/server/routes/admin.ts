@@ -11,16 +11,24 @@ router.use(requireAdmin);
 
 // GET /api/admin/stats
 router.get('/stats', asyncHandler(async (req: AuthRequest, res) => {
-  const [totalUsers, totalServers, totalCoins] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  
+  const [totalUsers, totalServers, totalCoins, activeUsers, recentUsers, recentServers] = await Promise.all([
     prisma.user.count(),
     prisma.server.count(),
     prisma.user.aggregate({ _sum: { coins: true } }),
+    prisma.user.count({ where: { lastLogin: { gte: sevenDaysAgo } } }),
+    prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    prisma.server.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
   ]);
 
   res.json({
     totalUsers,
     totalServers,
     totalCoins: totalCoins._sum?.coins || 0,
+    activeUsers,
+    recentUsers,
+    recentServers,
   });
 }));
 
