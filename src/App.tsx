@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { SettingsProvider } from './context/SettingsContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -10,6 +10,7 @@ import SetupRoute from './components/SetupRoute';
 // Pages
 import Login from './pages/Login';
 import Setup from './pages/Setup';
+import Maintenance from './pages/Maintenance';
 import Dashboard from './pages/Dashboard';
 import Servers from './pages/Servers';
 import CreateServer from './pages/CreateServer';
@@ -34,12 +35,29 @@ import AdminBilling from './pages/admin/Billing';
 import AdminSettings from './pages/admin/Settings';
 import AdminAuditLogs from './pages/admin/AuditLogs';
 
+function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
+  const { settings, loading } = useSettings();
+  const { user } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  // Show maintenance page if enabled and user is not admin
+  if (settings?.maintenanceMode && !user?.isAdmin) {
+    return <Maintenance />;
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
         <ToastProvider>
-          <Routes>
+          <MaintenanceWrapper>
+            <Routes>
           {/* Setup route - shown if not configured */}
           <Route path="/setup" element={<Setup />} />
           
@@ -90,6 +108,7 @@ export default function App() {
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+          </MaintenanceWrapper>
         </ToastProvider>
       </SettingsProvider>
     </AuthProvider>
