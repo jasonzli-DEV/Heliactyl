@@ -76,6 +76,102 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   res.json({ server });
 }));
 
+// PATCH /api/servers/:id - Update server resources
+router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
+  const { ram, disk, cpu, databases, backups, allocations } = req.body;
+
+  // Get server
+  const server = await prisma.server.findFirst({
+    where: {
+      id: req.params.id,
+      userId: req.user!.id,
+    },
+  });
+
+  if (!server) {
+    throw createError('Server not found', 404);
+  }
+
+  // Get user
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+  });
+
+  if (!user) {
+    throw createError('User not found', 404);
+  }
+
+  // Calculate resource differences
+  const ramDiff = ram - server.ram;
+  const diskDiff = disk - server.disk;
+  const cpuDiff = cpu - server.cpu;
+
+  // Check if user has enough resources for increases
+  if (ramDiff > 0 && user.ram < ramDiff) {
+    throw createError('Insufficient RAM available', 400);
+  }
+  if (diskDiff > 0 && user.disk < diskDiff) {
+    throw createError('Insufficient disk available', 400);
+  }
+  if (cpuDiff > 0 && user.cpu < cpuDiff) {
+    throw createError('Insufficient CPU available', 400);
+  }
+
+  // Update Pterodactyl server
+  try {
+    await pterodactyl.updatePteroServer(server.pterodactylId, {
+      memory: ram,
+      disk: disk,
+      cpu: cpu,
+      databases: databases,
+      backups: backups,
+      allocations: allocations,
+    });
+  } catch (error) {
+    console.error('Failed to update Pterodactyl server:', error);
+    throw createError('Failed to update server in panel', 500);
+  }
+
+  // Update database and user resources in a transaction
+  await prisma.$transaction([
+    // Update server
+    prisma.server.update({
+      where: { id: server.id },
+      data: {
+        ram,
+        disk,
+        cpu,
+        databases,
+        backups,
+        allocations,
+      },
+    }),
+    // Update user resources (refund or deduct)
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        ram: user.ram - ramDiff,
+        disk: user.disk - diskDiff,
+        cpu: user.cpu - cpuDiff,
+      },
+    }),
+    // Log action
+    prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: 'SERVER_UPDATED',
+        details: JSON.stringify({
+          serverId: server.id,
+          changes: { ram: ramDiff, disk: diskDiff, cpu: cpuDiff },
+        }),
+        ipAddress: req.ip || 'unknown',
+      },
+    }),
+  ]);
+
+  res.json({ success: true });
+}));
+
 // POST /api/servers - Create a new server
 router.post('/', asyncHandler(async (req: AuthRequest, res) => {
   const { name, locationId, eggId, ram, disk, cpu, databases, backups, allocations, environment } = req.body;

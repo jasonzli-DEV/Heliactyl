@@ -140,6 +140,29 @@ export async function deletePteroServer(serverId: number) {
   return pteroRequest(`/servers/${serverId}`, { method: 'DELETE' });
 }
 
+export async function updatePteroServer(serverId: number, options: {
+  memory: number;
+  disk: number;
+  cpu: number;
+  databases: number;
+  backups: number;
+  allocations: number;
+}) {
+  return pteroRequest(`/servers/${serverId}/build`, {
+    method: 'PATCH',
+    body: {
+      memory: options.memory,
+      disk: options.disk,
+      cpu: options.cpu,
+      feature_limits: {
+        databases: options.databases,
+        backups: options.backups,
+        allocations: options.allocations,
+      },
+    },
+  });
+}
+
 export async function suspendPteroServer(serverId: number) {
   return pteroRequest(`/servers/${serverId}/suspend`, { method: 'POST' });
 }

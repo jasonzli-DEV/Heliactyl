@@ -13,6 +13,7 @@ import Setup from './pages/Setup';
 import Dashboard from './pages/Dashboard';
 import Servers from './pages/Servers';
 import CreateServer from './pages/CreateServer';
+import EditServer from './pages/EditServer';
 import Store from './pages/Store';
 import Redeem from './pages/Redeem';
 import Earn from './pages/Earn';
@@ -55,6 +56,7 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/servers" element={<Servers />} />
                 <Route path="/servers/create" element={<CreateServer />} />
+                <Route path="/servers/:id/edit" element={<EditServer />} />
                 <Route path="/store" element={<Store />} />
                 <Route path="/redeem" element={<Redeem />} />
                 <Route path="/earn" element={<Earn />} />

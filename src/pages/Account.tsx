@@ -49,8 +49,10 @@ export default function Account() {
         setError(data.error || 'Failed to reset password');
         showToast(data.error || 'Failed to reset password', 'error');
       }
-    } catch {
-      setError('Failed to reset password');
+    } catch (err) {
+      const errorMsg = 'Failed to reset password';
+      setError(errorMsg);
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(null);
     }

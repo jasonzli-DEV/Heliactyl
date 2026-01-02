@@ -139,6 +139,10 @@ export default function AdminPackages() {
               <label className="label">Backups</label>
               <input type="number" name="backups" defaultValue={pkg?.backups || 0} className="input" />
             </div>
+            <div>
+              <label className="label">Ports</label>
+              <input type="number" name="allocations" defaultValue={pkg?.allocations || 0} className="input" />
+            </div>
           </div>
           <label className="flex items-center gap-2">
             <input type="checkbox" name="enabled" defaultChecked={pkg?.enabled ?? true} className="rounded" />
@@ -204,6 +208,9 @@ export default function AdminPackages() {
                 {pkg.disk > 0 && <p>+{pkg.disk} MB Disk</p>}
                 {pkg.cpu > 0 && <p>+{pkg.cpu}% CPU</p>}
                 {pkg.servers > 0 && <p>+{pkg.servers} Servers</p>}
+                {pkg.databases > 0 && <p>+{pkg.databases} Databases</p>}
+                {pkg.backups > 0 && <p>+{pkg.backups} Backups</p>}
+                {pkg.allocations > 0 && <p>+{pkg.allocations} Ports</p>}
               </div>
             </div>
           ))}

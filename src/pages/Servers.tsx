@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins, Key, Mail, Copy, CheckCircle } from 'lucide-react';
+import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins, Key, Mail, Copy, CheckCircle, Edit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
@@ -98,6 +98,7 @@ export default function Servers() {
         showToast(data.error || 'Failed to reset password', 'error');
       }
     } catch (error) {
+      console.error('Failed to reset password:', error);
       showToast('Failed to reset password', 'error');
     } finally {
       setResettingPassword(false);
@@ -238,6 +239,13 @@ export default function Servers() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Link
+                    to={`/servers/${server.id}/edit`}
+                    className="btn-ghost p-2"
+                    title="Edit Resources"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Link>
                   <a
                     href={`https://panel.enderbit.com/server/${server.pterodactylUuid}`}
                     target="_blank"

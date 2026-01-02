@@ -195,15 +195,30 @@ export default function Dashboard() {
           </div>
           <div>
             <p className="text-sm text-gray-400 mb-1">Databases</p>
-            <p className="text-2xl font-bold text-white">{resources?.available.databases || 0}</p>
+            <p className="text-2xl font-bold text-white">
+              {resources?.used.databases || 0}
+              <span className="text-gray-500 text-base font-normal">
+                {' '}/ {resources?.available.databases || 0}
+              </span>
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-400 mb-1">Backups</p>
-            <p className="text-2xl font-bold text-white">{resources?.available.backups || 0}</p>
+            <p className="text-2xl font-bold text-white">
+              {resources?.used.backups || 0}
+              <span className="text-gray-500 text-base font-normal">
+                {' '}/ {resources?.available.backups || 0}
+              </span>
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-400 mb-1">Ports</p>
-            <p className="text-2xl font-bold text-white">{resources?.available.allocations || 0}</p>
+            <p className="text-2xl font-bold text-white">
+              {resources?.used.allocations || 0}
+              <span className="text-gray-500 text-base font-normal">
+                {' '}/ {resources?.available.allocations || 0}
+              </span>
+            </p>
           </div>
         </div>
       </div>

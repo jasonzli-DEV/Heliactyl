@@ -118,7 +118,7 @@ export default function AdminBilling() {
                 defaultValue={settings?.billingRamRate || 1024} 
                 className="input" 
                 min="1"
-                step="128"
+                step="1"
               />
               <p className="text-xs text-gray-500 mt-1">MB of RAM per credit/hour</p>
               <p className="text-xs text-blue-400 mt-1">Example: 1024 = 1 credit gives 1GB RAM for 1 hour</p>
@@ -155,6 +155,53 @@ export default function AdminBilling() {
             <p className="text-sm text-yellow-400">
               <strong>Note:</strong> Server slots, databases, backups, and allocations are <strong>permanent purchases</strong> from the store and are NOT billed hourly. Only RAM, CPU, and Disk resources consume credits while servers are running.
             </p>
+          </div>
+        </div>
+
+        {/* Max Slider Configuration */}
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Slider Maximums</h2>
+          <p className="text-sm text-gray-400 mb-4">
+            Set maximum values for resource sliders when creating servers. Users can allocate up to these amounts.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="label">Max RAM (GB)</label>
+              <input 
+                type="number" 
+                name="maxRamSlider" 
+                defaultValue={12} 
+                className="input" 
+                min="1"
+                step="1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Maximum GB users can allocate</p>
+            </div>
+            <div>
+              <label className="label">Max Disk (GB)</label>
+              <input 
+                type="number" 
+                name="maxDiskSlider" 
+                defaultValue={50} 
+                className="input" 
+                min="1"
+                step="1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Maximum GB users can allocate</p>
+            </div>
+            <div>
+              <label className="label">Max CPU (%)</label>
+              <input 
+                type="number" 
+                name="maxCpuSlider" 
+                defaultValue={400} 
+                className="input" 
+                min="50"
+                step="50"
+              />
+              <p className="text-xs text-gray-500 mt-1">Maximum % users can allocate</p>
+            </div>
           </div>
         </div>
 
