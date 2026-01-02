@@ -191,7 +191,7 @@ export default function Earn() {
         </div>
 
         <h2 className="text-xl font-semibold text-white mb-2">
-          Earn {status.coins} Coins
+          Earn {status.coins} {status.coins === 1 ? 'Coin' : 'Coins'}
         </h2>
         <p className="text-gray-400 mb-6">
           Click the button below to start. You'll be redirected to complete a short link, then automatically return here with your coins!

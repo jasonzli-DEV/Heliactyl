@@ -190,12 +190,13 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
     environment: mergedEnvironment,
     dockerImage: egg.dockerImage,
     nestId: egg.nestId,
-  }) as { attributes: { id: number } };
+  }) as { attributes: { id: number; uuid?: string; identifier?: string } };
 
   // Create server in database
   const server = await prisma.server.create({
     data: {
       pterodactylId: pteroServer.attributes.id,
+      pterodactylUuid: pteroServer.attributes.uuid || pteroServer.attributes.identifier || undefined,
       name,
       ram: requestedRam,
       disk: requestedDisk,

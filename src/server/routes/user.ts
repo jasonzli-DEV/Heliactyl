@@ -388,7 +388,7 @@ router.delete('/account', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 // POST /api/user/reset-password - Reset Pterodactyl password
-router.post('/reset-password', asyncHandler(async (req: AuthRequest, res) => {
+router.post('/reset-password', requireAuth, asyncHandler(async (req: AuthRequest, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
   });

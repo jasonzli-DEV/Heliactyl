@@ -137,6 +137,9 @@ export default function Servers() {
                 <Mail className="w-4 h-4 text-gray-500" />
                 <span className="text-white font-mono">{user.email || 'Not set'}</span>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Forgot your password or never generated it? Reset it below!
+              </p>
             </div>
 
             {newPassword && (
