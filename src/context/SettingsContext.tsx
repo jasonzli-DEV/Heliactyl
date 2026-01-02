@@ -42,9 +42,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const refreshSettings = async () => {
     try {
-      const res = await fetch('/api/settings');
+      const res = await fetch('/api/settings/public');
       const data = await res.json();
-      setSettings(data.settings || defaultSettings);
+      setSettings(data || defaultSettings);
     } catch (error) {
       console.error('Failed to fetch settings:', error);
       setSettings(defaultSettings);

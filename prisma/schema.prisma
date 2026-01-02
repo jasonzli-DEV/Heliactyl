@@ -193,14 +193,14 @@ model Settings {
   cpuPrice              Int      @default(20)
   serverPrice           Int      @default(100)
   
-  // Hourly billing settings (credits per hour per resource unit)
+  // Hourly billing settings (MB/% of resource per coin per hour)
   billingEnabled        Boolean  @default(false)  // Enable hourly billing
-  billingRamRate        Float    @default(1)      // Credits per hour per 1GB RAM
-  billingCpuRate        Float    @default(1)      // Credits per hour per 50% CPU
-  billingDiskRate       Float    @default(1)      // Credits per hour per 5GB disk
-  billingDatabaseRate   Float    @default(1)      // Credits per hour per database
-  billingAllocationRate Float    @default(1)      // Credits per hour per allocation
-  billingBackupRate     Float    @default(1)      // Credits per hour per backup
+  billingRamRate        Float    @default(1024)   // MB RAM per coin/hour (1024 = 1GB costs 1 coin/hr)
+  billingCpuRate        Float    @default(100)    // % CPU per coin/hour (100 = 100% costs 1 coin/hr)
+  billingDiskRate       Float    @default(5120)   // MB disk per coin/hour (5120 = 5GB costs 1 coin/hr)
+  billingDatabaseRate   Float    @default(0)      // Not used - databases are permanent
+  billingAllocationRate Float    @default(0)      // Not used - allocations are permanent
+  billingBackupRate     Float    @default(0)      // Not used - backups are permanent
   billingGracePeriod    Int      @default(24)     // Hours before suspension
   
   // Slider maximums for server creation
