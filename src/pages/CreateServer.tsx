@@ -48,9 +48,9 @@ export default function CreateServer() {
     name: '',
     locationId: '',
     eggId: '',
-    ram: 1024,
-    disk: 5120,
-    cpu: 100,
+    ram: 1024,      // Minimum RAM
+    disk: 2048,     // Minimum Disk
+    cpu: 50,        // Minimum CPU
     databases: 0,
     backups: 0,
     allocations: 1,

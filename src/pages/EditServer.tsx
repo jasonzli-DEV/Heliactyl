@@ -15,14 +15,28 @@ interface ServerData {
   allocations: number;
 }
 
+interface UserResources {
+  available: {
+    databases: number;
+    backups: number;
+    allocations: number;
+  };
+  used: {
+    databases: number;
+    backups: number;
+    allocations: number;
+  };
+}
+
 export default function EditServer() {
   const { id } = useParams<{ id: string }>();
-  const { user, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [server, setServer] = useState<ServerData | null>(null);
+  const [userResources, setUserResources] = useState<UserResources | null>(null);
   const [sliderMaxes, setSliderMaxes] = useState({
     maxRamSlider: 12288,
     maxDiskSlider: 51200,
@@ -40,7 +54,20 @@ export default function EditServer() {
   useEffect(() => {
     fetchServer();
     fetchSettings();
+    fetchUserResources();
   }, [id]);
+
+  const fetchUserResources = async () => {
+    try {
+      const res = await fetch('/api/user/resources', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setUserResources(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user resources:', error);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -81,6 +108,17 @@ export default function EditServer() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calculate available slots for this server (total - used by other servers)
+  // Available = user's total limit - (currently used - this server's current)
+  const getAvailableSlots = (resource: 'databases' | 'backups' | 'allocations') => {
+    if (!userResources || !server) return 0;
+    const total = userResources.available[resource]; // User's total limit
+    const used = userResources.used[resource]; // Total used by all servers
+    const currentServerUsage = server[resource]; // This server's current usage
+    // Available for this server = total - (used by OTHER servers)
+    return total - (used - currentServerUsage);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -238,7 +276,7 @@ export default function EditServer() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-white">{form.databases}</span>
                   <span className="text-xs text-gray-500">
-                    / {user?.databases || 0} left
+                    / {getAvailableSlots('databases')} max
                   </span>
                 </div>
               </div>
@@ -247,11 +285,11 @@ export default function EditServer() {
                 value={form.databases}
                 onChange={(e) => setForm({ ...form, databases: parseInt(e.target.value) })}
                 min={0}
-                max={server.databases + (user?.databases || 0)}
+                max={getAvailableSlots('databases')}
                 step={1}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(form.databases / Math.max(1, server.databases + (user?.databases || 0))) * 100}%, rgb(31, 41, 55) ${(form.databases / Math.max(1, server.databases + (user?.databases || 0))) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(form.databases / Math.max(1, getAvailableSlots('databases'))) * 100}%, rgb(31, 41, 55) ${(form.databases / Math.max(1, getAvailableSlots('databases'))) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>
@@ -262,7 +300,7 @@ export default function EditServer() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-white">{form.backups}</span>
                   <span className="text-xs text-gray-500">
-                    / {user?.backups || 0} left
+                    / {getAvailableSlots('backups')} max
                   </span>
                 </div>
               </div>
@@ -271,11 +309,11 @@ export default function EditServer() {
                 value={form.backups}
                 onChange={(e) => setForm({ ...form, backups: parseInt(e.target.value) })}
                 min={0}
-                max={server.backups + (user?.backups || 0)}
+                max={getAvailableSlots('backups')}
                 step={1}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) ${(form.backups / Math.max(1, server.backups + (user?.backups || 0))) * 100}%, rgb(31, 41, 55) ${(form.backups / Math.max(1, server.backups + (user?.backups || 0))) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) ${(form.backups / Math.max(1, getAvailableSlots('backups'))) * 100}%, rgb(31, 41, 55) ${(form.backups / Math.max(1, getAvailableSlots('backups'))) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>
@@ -286,7 +324,7 @@ export default function EditServer() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-white">{form.allocations}</span>
                   <span className="text-xs text-gray-500">
-                    / {user?.allocations || 0} left
+                    / {getAvailableSlots('allocations')} max
                   </span>
                 </div>
               </div>
@@ -295,11 +333,11 @@ export default function EditServer() {
                 value={form.allocations}
                 onChange={(e) => setForm({ ...form, allocations: parseInt(e.target.value) })}
                 min={1}
-                max={server.allocations + (user?.allocations || 0)}
+                max={Math.max(1, getAvailableSlots('allocations'))}
                 step={1}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(234, 179, 8) 0%, rgb(234, 179, 8) ${((form.allocations - 1) / Math.max(1, server.allocations + (user?.allocations || 0) - 1)) * 100}%, rgb(31, 41, 55) ${((form.allocations - 1) / Math.max(1, server.allocations + (user?.allocations || 0) - 1)) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(234, 179, 8) 0%, rgb(234, 179, 8) ${((form.allocations - 1) / Math.max(1, getAvailableSlots('allocations') - 1)) * 100}%, rgb(31, 41, 55) ${((form.allocations - 1) / Math.max(1, getAvailableSlots('allocations') - 1)) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>

@@ -101,19 +101,34 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
     throw createError('User not found', 404);
   }
 
-  // Calculate resource differences for permanent resources (databases, backups, allocations)
-  const databasesDiff = databases - server.databases;
-  const backupsDiff = backups - server.backups;
-  const allocationsDiff = allocations - server.allocations;
+  // Get total resources used by ALL user's servers (including this one)
+  const serverAggregates = await prisma.server.aggregate({
+    where: { userId: user.id },
+    _sum: {
+      databases: true,
+      backups: true,
+      allocations: true,
+    },
+  });
 
-  // Check if user has enough permanent resources for increases
-  if (databasesDiff > 0 && user.databases < databasesDiff) {
+  const usedDatabases = serverAggregates._sum?.databases || 0;
+  const usedBackups = serverAggregates._sum?.backups || 0;
+  const usedAllocations = serverAggregates._sum?.allocations || 0;
+
+  // Calculate what the NEW totals would be after this update
+  // (subtract current server values, add new values)
+  const newTotalDatabases = usedDatabases - server.databases + databases;
+  const newTotalBackups = usedBackups - server.backups + backups;
+  const newTotalAllocations = usedAllocations - server.allocations + allocations;
+
+  // Validate permanent resources against user's total limits
+  if (newTotalDatabases > user.databases) {
     throw createError('Insufficient databases available', 400);
   }
-  if (backupsDiff > 0 && user.backups < backupsDiff) {
+  if (newTotalBackups > user.backups) {
     throw createError('Insufficient backups available', 400);
   }
-  if (allocationsDiff > 0 && user.allocations < allocationsDiff) {
+  if (newTotalAllocations > user.allocations) {
     throw createError('Insufficient ports available', 400);
   }
 
@@ -132,7 +147,8 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
     throw createError('Failed to update server in panel', 500);
   }
 
-  // Update database and user resources in a transaction
+  // Update database - only update server, NOT user resources
+  // (user.allocations etc represent the TOTAL limit, not available pool)
   await prisma.$transaction([
     // Update server
     prisma.server.update({
@@ -146,15 +162,6 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
         allocations,
       },
     }),
-    // Update user permanent resources (refund or deduct)
-    prisma.user.update({
-      where: { id: user.id },
-      data: {
-        databases: user.databases - databasesDiff,
-        backups: user.backups - backupsDiff,
-        allocations: user.allocations - allocationsDiff,
-      },
-    }),
     // Log action
     prisma.auditLog.create({
       data: {
@@ -162,7 +169,14 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
         action: 'SERVER_UPDATED',
         details: JSON.stringify({
           serverId: server.id,
-          changes: { ram, disk, cpu, databases: databasesDiff, backups: backupsDiff, allocations: allocationsDiff },
+          changes: { 
+            ram: ram - server.ram, 
+            disk: disk - server.disk, 
+            cpu: cpu - server.cpu, 
+            databases: databases - server.databases, 
+            backups: backups - server.backups, 
+            allocations: allocations - server.allocations 
+          },
         }),
         ipAddress: req.ip || 'unknown',
       },
@@ -222,9 +236,10 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
   const requestedRam = Math.max(ram || egg.minRam, egg.minRam);
   const requestedDisk = Math.max(disk || egg.minDisk, egg.minDisk);
   const requestedCpu = Math.max(cpu || egg.minCpu, egg.minCpu);
-  const requestedDatabases = databases || egg.databases;
-  const requestedBackups = backups || egg.backups;
-  const requestedAllocations = allocations || egg.allocations;
+  // Use nullish coalescing (??) so 0 is not treated as falsy
+  const requestedDatabases = databases ?? egg.databases;
+  const requestedBackups = backups ?? egg.backups;
+  const requestedAllocations = allocations ?? egg.allocations;
 
   // Get used resources
   const serverAggregates = await prisma.server.aggregate({

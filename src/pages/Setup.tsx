@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Shield, Server, CheckCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 
@@ -20,8 +20,27 @@ export default function Setup() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+
+  // Check if setup is already complete - redirect to dashboard if so
+  useEffect(() => {
+    const checkSetup = async () => {
+      try {
+        const res = await fetch('/api/setup/status');
+        const data = await res.json();
+        if (data.setupComplete) {
+          navigate('/');
+        }
+      } catch (err) {
+        // If we can't reach the API, stay on setup page
+      } finally {
+        setChecking(false);
+      }
+    };
+    checkSetup();
+  }, [navigate]);
 
   const [config, setConfig] = useState({
     siteName: 'EnderBit',
@@ -347,6 +366,15 @@ export default function Setup() {
       setCurrentStep(prev => prev + 1);
     }
   };
+
+  // Show loading while checking if setup is complete
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 text-accent-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-dark-900 flex items-center justify-center p-4">

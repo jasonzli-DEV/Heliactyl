@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Settings, Loader2, Save, ExternalLink, Download, RefreshCw, CheckCircle, AlertCircle, Link as LinkIcon, CreditCard } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Settings, Loader2, Save, ExternalLink, Download, RefreshCw, CheckCircle, AlertCircle, Link as LinkIcon, CreditCard, Upload, ImageIcon } from 'lucide-react';
 
 interface SettingsData {
   siteName: string;
@@ -58,6 +58,12 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   
+  // File upload state
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
+  
   // Update system state
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
@@ -68,6 +74,51 @@ export default function AdminSettings() {
     fetchSettings();
     checkForUpdates();
   }, []);
+
+  const handleFileUpload = async (file: File, type: 'logo' | 'favicon') => {
+    if (type === 'logo') setUploadingLogo(true);
+    else setUploadingFavicon(true);
+    
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+      const base64Data = await base64Promise;
+      
+      // Upload to server
+      const res = await fetch('/api/upload/base64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          data: base64Data,
+          filename: file.name,
+          type: file.type,
+        }),
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      
+      // Update settings with new URL
+      if (settings) {
+        setSettings({
+          ...settings,
+          [type]: data.url,
+        });
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      if (type === 'logo') setUploadingLogo(false);
+      else setUploadingFavicon(false);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -360,12 +411,74 @@ export default function AdminSettings() {
               <input type="text" name="siteDescription" defaultValue={settings?.siteDescription || ''} className="input" />
             </div>
             <div>
-              <label className="label">Logo URL</label>
-              <input type="text" name="logo" defaultValue={settings?.logo || ''} className="input" />
+              <label className="label">Logo</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  name="logo" 
+                  value={settings?.logo || ''} 
+                  onChange={(e) => setSettings(s => s ? {...s, logo: e.target.value} : s)}
+                  className="input flex-1" 
+                  placeholder="Enter URL or upload file"
+                />
+                <input
+                  type="file"
+                  ref={logoInputRef}
+                  accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'logo')}
+                />
+                <button
+                  type="button"
+                  onClick={() => logoInputRef.current?.click()}
+                  disabled={uploadingLogo}
+                  className="btn-secondary px-3"
+                  title="Upload logo"
+                >
+                  {uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                </button>
+              </div>
+              {settings?.logo && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={settings.logo} alt="Logo preview" className="h-8 rounded" />
+                  <span className="text-xs text-gray-500">Preview</span>
+                </div>
+              )}
             </div>
             <div>
-              <label className="label">Favicon URL</label>
-              <input type="text" name="favicon" defaultValue={settings?.favicon || ''} className="input" />
+              <label className="label">Favicon</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  name="favicon" 
+                  value={settings?.favicon || ''} 
+                  onChange={(e) => setSettings(s => s ? {...s, favicon: e.target.value} : s)}
+                  className="input flex-1" 
+                  placeholder="Enter URL or upload file"
+                />
+                <input
+                  type="file"
+                  ref={faviconInputRef}
+                  accept="image/png,image/jpeg,image/x-icon,image/svg+xml,image/webp"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'favicon')}
+                />
+                <button
+                  type="button"
+                  onClick={() => faviconInputRef.current?.click()}
+                  disabled={uploadingFavicon}
+                  className="btn-secondary px-3"
+                  title="Upload favicon"
+                >
+                  {uploadingFavicon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                </button>
+              </div>
+              {settings?.favicon && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={settings.favicon} alt="Favicon preview" className="h-6 rounded" />
+                  <span className="text-xs text-gray-500">Preview</span>
+                </div>
+              )}
             </div>
           </div>
           <div className="mt-4 flex gap-4">
