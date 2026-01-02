@@ -114,6 +114,11 @@ router.patch('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
     }
   }
 
+  // Force RAM/Disk/CPU to 0 since they're billed hourly (not given as default resources)
+  updates.defaultRam = 0;
+  updates.defaultDisk = 0;
+  updates.defaultCpu = 0;
+
   // Don't update secrets if they're masked
   if (updates.pterodactylKey === '••••••••') {
     delete updates.pterodactylKey;
@@ -164,6 +169,11 @@ router.put('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
       updates[field] = req.body[field];
     }
   }
+
+  // Force RAM/Disk/CPU to 0 since they're billed hourly (not given as default resources)
+  updates.defaultRam = 0;
+  updates.defaultDisk = 0;
+  updates.defaultCpu = 0;
 
   // Don't update secrets if they're masked
   if (updates.pterodactylKey === '••••••••') {

@@ -393,38 +393,50 @@ export default function AdminSettings() {
         {/* Default Resources */}
         <div className="card p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Default Resources (New Users)</h2>
+          <p className="text-sm text-gray-400 mb-4">
+            ⚠️ <strong>Important:</strong> RAM/Disk/CPU are NOT given to users - servers are billed hourly for these resources. 
+            Only set <strong>Coins, Servers, Databases, Backups, and Allocations</strong> as defaults.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="label">Coins</label>
-              <input type="number" name="defaultCoins" defaultValue={settings?.defaultCoins || 0} className="input" min="0" />
+              <input type="number" name="defaultCoins" defaultValue={settings?.defaultCoins || 60} className="input" min="0" />
+              <p className="text-xs text-gray-500 mt-1">Starting balance</p>
             </div>
-            <div>
+            <div className="bg-dark-700/50 p-3 rounded-lg opacity-60">
               <label className="label">RAM (MB)</label>
-              <input type="number" name="defaultRam" defaultValue={settings?.defaultRam || 0} className="input" min="0" />
+              <input type="number" name="defaultRam" value={0} className="input" disabled />
+              <p className="text-xs text-red-400 mt-1">Billed hourly, not given</p>
             </div>
-            <div>
+            <div className="bg-dark-700/50 p-3 rounded-lg opacity-60">
               <label className="label">Disk (MB)</label>
-              <input type="number" name="defaultDisk" defaultValue={settings?.defaultDisk || 0} className="input" min="0" />
+              <input type="number" name="defaultDisk" value={0} className="input" disabled />
+              <p className="text-xs text-red-400 mt-1">Billed hourly, not given</p>
             </div>
-            <div>
+            <div className="bg-dark-700/50 p-3 rounded-lg opacity-60">
               <label className="label">CPU (%)</label>
-              <input type="number" name="defaultCpu" defaultValue={settings?.defaultCpu || 0} className="input" min="0" />
+              <input type="number" name="defaultCpu" value={0} className="input" disabled />
+              <p className="text-xs text-red-400 mt-1">Billed hourly, not given</p>
             </div>
             <div>
-              <label className="label">Servers</label>
-              <input type="number" name="defaultServers" defaultValue={settings?.defaultServers || 0} className="input" min="0" />
+              <label className="label">Server Slots</label>
+              <input type="number" name="defaultServers" defaultValue={settings?.defaultServers || 1} className="input" min="0" />
+              <p className="text-xs text-gray-500 mt-1">Permanent slots</p>
             </div>
             <div>
-              <label className="label">Databases</label>
-              <input type="number" name="defaultDatabases" defaultValue={settings?.defaultDatabases || 0} className="input" min="0" />
+              <label className="label">Databases (per server)</label>
+              <input type="number" name="defaultDatabases" defaultValue={settings?.defaultDatabases || 1} className="input" min="0" />
+              <p className="text-xs text-gray-500 mt-1">Permanent limit</p>
             </div>
             <div>
-              <label className="label">Backups</label>
-              <input type="number" name="defaultBackups" defaultValue={settings?.defaultBackups || 0} className="input" min="0" />
+              <label className="label">Backups (per server)</label>
+              <input type="number" name="defaultBackups" defaultValue={settings?.defaultBackups || 1} className="input" min="0" />
+              <p className="text-xs text-gray-500 mt-1">Permanent limit</p>
             </div>
             <div>
-              <label className="label">Allocations</label>
-              <input type="number" name="defaultAllocations" defaultValue={settings?.defaultAllocations || 0} className="input" min="0" />
+              <label className="label">Ports (per server)</label>
+              <input type="number" name="defaultAllocations" defaultValue={settings?.defaultAllocations || 1} className="input" min="0" />
+              <p className="text-xs text-gray-500 mt-1">Permanent limit</p>
             </div>
           </div>
         </div>

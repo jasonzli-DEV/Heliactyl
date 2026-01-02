@@ -206,10 +206,20 @@ router.get('/eggs', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 router.post('/eggs/sync', asyncHandler(async (req: AuthRequest, res) => {
-  const nests = await pterodactyl.getNests() as { data: Array<{ attributes: { id: number; name: string } }> };
+  const nests = await pterodactyl.getNests() as { data: Array<{ attributes: { id: number; name?: string } }> };
   let syncedCount = 0;
   for (const nest of nests.data) {
-    const nestName = nest.attributes.name || `Nest #${nest.attributes.id}`;
+    // Pterodactyl API sometimes doesn't include name in /nests, fetch individual nest if needed
+    let nestName = nest.attributes.name;
+    if (!nestName) {
+      try {
+        const nestDetail = await pterodactyl.getNest(nest.attributes.id) as { attributes: { name: string } };
+        nestName = nestDetail.attributes.name;
+      } catch {
+        nestName = `Nest #${nest.attributes.id}`;
+      }
+    }
+    
     const eggs = await pterodactyl.getEggs(nest.attributes.id) as { data: Array<{ attributes: { id: number; name: string; description: string; docker_image: string; startup: string } }> };
     for (const egg of eggs.data) {
       await prisma.egg.upsert({

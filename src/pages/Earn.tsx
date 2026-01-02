@@ -28,6 +28,17 @@ export default function Earn() {
 
     if (success === 'true' && coins) {
       setMessage({ type: 'success', text: `🎉 Congratulations! You earned ${coins} coins!` });
+      // Show browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Coins Earned!', {
+          body: `You earned ${coins} coins!`,
+          icon: '/favicon.ico',
+        });
+      }
+      // Show alert popup as fallback
+      setTimeout(() => {
+        alert(`🎉 Success! You earned ${coins} coins!`);
+      }, 500);
       refreshUser();
       loadStatus(); // Refresh status to get new cooldown
       window.history.replaceState({}, '', '/earn');

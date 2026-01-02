@@ -58,6 +58,7 @@ model User {
   couponsUsed          CouponUse[]
   transactions         Transaction[]
   sessions             Session[]
+  tickets              Ticket[]
   
   @@index([discordId])
 }
@@ -407,4 +408,41 @@ model EarnToken {
   
   @@index([token])
   @@index([userId])
+}
+
+// ============================================================================
+// TICKET SYSTEM MODELS
+// ============================================================================
+
+model Ticket {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  subject     String
+  status      String          @default("open") // open, closed
+  priority    String          @default("normal") // low, normal, high
+  
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  closedAt    DateTime?
+  
+  messages    TicketMessage[]
+  
+  @@index([userId])
+  @@index([status])
+}
+
+model TicketMessage {
+  id          String   @id @default(uuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  isStaff     Boolean  @default(false)
+  message     String
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([ticketId])
 }

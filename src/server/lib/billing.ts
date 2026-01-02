@@ -30,12 +30,9 @@ export function calculateHourlyCost(
   // Disk: 1 credit per 5GB (5120MB)
   const diskCost = (disk / 5120) * rates.diskRate;
   
-  // Features
-  const databaseCost = databases * rates.databaseRate;
-  const allocationCost = allocations * rates.allocationRate;
-  const backupCost = backups * rates.backupRate;
+  // Databases, allocations, and backups are now permanent resources (not billed hourly)
   
-  return ramCost + cpuCost + diskCost + databaseCost + allocationCost + backupCost;
+  return ramCost + cpuCost + diskCost;
 }
 
 // Process billing for all servers

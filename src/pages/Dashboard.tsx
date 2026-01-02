@@ -138,7 +138,7 @@ export default function Dashboard() {
             </Link>
             <Link to="/store" className="btn-primary">
               <ShoppingCart className="w-4 h-4" />
-              Buy Coins
+              Store
             </Link>
           </div>
         </div>
@@ -146,10 +146,11 @@ export default function Dashboard() {
 
       {/* Server limits info */}
       <div className="card p-6 mb-8">
-        <h2 className="text-lg font-semibold text-white mb-4">Server Limits</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Permanent Resources</h2>
+        <p className="text-sm text-gray-400 mb-4">These resources last forever. Buy more in the store!</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
-            <p className="text-sm text-gray-400 mb-1">Active Servers</p>
+            <p className="text-sm text-gray-400 mb-1">Server Slots</p>
             <p className="text-2xl font-bold text-white">
               {resources?.used.servers || 0}
               <span className="text-gray-500 text-base font-normal">
@@ -158,12 +159,16 @@ export default function Dashboard() {
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">Max Databases per Server</p>
+            <p className="text-sm text-gray-400 mb-1">Databases (per server)</p>
             <p className="text-2xl font-bold text-white">{resources?.available.databases || 0}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">Max Backups per Server</p>
+            <p className="text-sm text-gray-400 mb-1">Backups (per server)</p>
             <p className="text-2xl font-bold text-white">{resources?.available.backups || 0}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-400 mb-1">Ports (per server)</p>
+            <p className="text-2xl font-bold text-white">{resources?.available.allocations || 0}</p>
           </div>
         </div>
       </div>
