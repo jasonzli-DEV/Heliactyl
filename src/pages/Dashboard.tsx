@@ -185,107 +185,69 @@ export default function Dashboard() {
         <p className="text-sm text-gray-400 mb-4">These resources last forever. Buy more in the store!</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
-            <p className="text-sm text-gray-400 mb-1">Server Slots</p>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-sm text-gray-400 mb-2">Server Slots</p>
+            <p className="text-2xl font-bold text-white mb-2">
               {resources?.used.servers || 0}
               <span className="text-gray-500 text-base font-normal">
                 {' '}/ {resources?.available.servers || 0}
               </span>
             </p>
+            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-blue-500 h-full transition-all duration-500 rounded-full"
+                style={{ 
+                  width: `${Math.min(100, ((resources?.used.servers || 0) / Math.max(1, resources?.available.servers || 1)) * 100)}%` 
+                }}
+              />
+            </div>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">Databases</p>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-sm text-gray-400 mb-2">Databases</p>
+            <p className="text-2xl font-bold text-white mb-2">
               {resources?.used.databases || 0}
               <span className="text-gray-500 text-base font-normal">
                 {' '}/ {resources?.available.databases || 0}
               </span>
             </p>
+            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-purple-500 h-full transition-all duration-500 rounded-full"
+                style={{ 
+                  width: `${Math.min(100, ((resources?.used.databases || 0) / Math.max(1, resources?.available.databases || 1)) * 100)}%` 
+                }}
+              />
+            </div>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">Backups</p>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-sm text-gray-400 mb-2">Backups</p>
+            <p className="text-2xl font-bold text-white mb-2">
               {resources?.used.backups || 0}
               <span className="text-gray-500 text-base font-normal">
                 {' '}/ {resources?.available.backups || 0}
               </span>
             </p>
+            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-green-500 h-full transition-all duration-500 rounded-full"
+                style={{ 
+                  width: `${Math.min(100, ((resources?.used.backups || 0) / Math.max(1, resources?.available.backups || 1)) * 100)}%` 
+                }}
+              />
+            </div>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">Ports</p>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-sm text-gray-400 mb-2">Ports</p>
+            <p className="text-2xl font-bold text-white mb-2">
               {resources?.used.allocations || 0}
               <span className="text-gray-500 text-base font-normal">
                 {' '}/ {resources?.available.allocations || 0}
               </span>
             </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Resource usage indicators (RAM, CPU, Disk) */}
-      <div className="card p-6 mb-8">
-        <h2 className="text-lg font-semibold text-white mb-4">Hourly Billed Resources</h2>
-        <p className="text-sm text-gray-400 mb-4">These resources consume coins while servers are running.</p>
-        <div className="space-y-6">
-          {/* RAM Usage */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <MemoryStick className="w-4 h-4 text-green-400" />
-                <span className="text-sm font-medium text-white">RAM</span>
-              </div>
-              <span className="text-sm text-gray-400">
-                {((resources?.used.ram || 0) / 1024).toFixed(1)} GB / {((resources?.available.ram || 1024) / 1024).toFixed(1)} GB
-              </span>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-green-500 h-full transition-all duration-500 rounded-full"
-                style={{ 
-                  width: `${Math.min(100, ((resources?.used.ram || 0) / (resources?.available.ram || 1024)) * 100)}%` 
-                }}
-              />
-            </div>
-          </div>
-
-          {/* CPU Usage */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-red-400" />
-                <span className="text-sm font-medium text-white">CPU</span>
-              </div>
-              <span className="text-sm text-gray-400">
-                {resources?.used.cpu || 0}% / {resources?.available.cpu || 100}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-red-500 h-full transition-all duration-500 rounded-full"
-                style={{ 
-                  width: `${Math.min(100, ((resources?.used.cpu || 0) / (resources?.available.cpu || 100)) * 100)}%` 
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Disk Usage */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <HardDrive className="w-4 h-4 text-yellow-400" />
-                <span className="text-sm font-medium text-white">Disk</span>
-              </div>
-              <span className="text-sm text-gray-400">
-                {((resources?.used.disk || 0) / 1024).toFixed(1)} GB / {((resources?.available.disk || 5120) / 1024).toFixed(1)} GB
-              </span>
-            </div>
             <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
               <div 
                 className="bg-yellow-500 h-full transition-all duration-500 rounded-full"
                 style={{ 
-                  width: `${Math.min(100, ((resources?.used.disk || 0) / (resources?.available.disk || 5120)) * 100)}%` 
+                  width: `${Math.min(100, ((resources?.used.allocations || 0) / Math.max(1, resources?.available.allocations || 1)) * 100)}%` 
                 }}
               />
             </div>

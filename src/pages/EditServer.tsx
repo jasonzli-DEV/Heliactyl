@@ -231,11 +231,68 @@ export default function EditServer() {
                 }}
               />
             </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="label">Databases</label>
+                <span className="text-sm font-medium text-white">{form.databases}</span>
+              </div>
+              <input
+                type="range"
+                value={form.databases}
+                onChange={(e) => setForm({ ...form, databases: parseInt(e.target.value) })}
+                min={0}
+                max={50}
+                step={1}
+                className="slider w-full"
+                style={{
+                  background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${(form.databases / 50) * 100}%, rgb(31, 41, 55) ${(form.databases / 50) * 100}%, rgb(31, 41, 55) 100%)`
+                }}
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="label">Backups</label>
+                <span className="text-sm font-medium text-white">{form.backups}</span>
+              </div>
+              <input
+                type="range"
+                value={form.backups}
+                onChange={(e) => setForm({ ...form, backups: parseInt(e.target.value) })}
+                min={0}
+                max={50}
+                step={1}
+                className="slider w-full"
+                style={{
+                  background: `linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) ${(form.backups / 50) * 100}%, rgb(31, 41, 55) ${(form.backups / 50) * 100}%, rgb(31, 41, 55) 100%)`
+                }}
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="label">Ports (Allocations)</label>
+                <span className="text-sm font-medium text-white">{form.allocations}</span>
+              </div>
+              <input
+                type="range"
+                value={form.allocations}
+                onChange={(e) => setForm({ ...form, allocations: parseInt(e.target.value) })}
+                min={1}
+                max={50}
+                step={1}
+                className="slider w-full"
+                style={{
+                  background: `linear-gradient(to right, rgb(234, 179, 8) 0%, rgb(234, 179, 8) ${((form.allocations - 1) / 49) * 100}%, rgb(31, 41, 55) ${((form.allocations - 1) / 49) * 100}%, rgb(31, 41, 55) 100%)`
+                }}
+              />
+            </div>
           </div>
 
           <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
             <p className="text-sm text-blue-400">
-              <strong>Note:</strong> Changes to RAM, CPU, and Disk will affect your hourly billing cost.
+              <strong>Note:</strong> Changes to RAM, CPU, and Disk will affect your hourly billing cost. Databases, backups, and ports are permanent resources.
             </p>
           </div>
         </div>
