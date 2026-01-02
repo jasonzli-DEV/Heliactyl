@@ -34,6 +34,23 @@ export async function initializeDatabase() {
       },
     });
     console.log('✓ Created default settings');
+  } else {
+    // Migrate old billing defaults (1) to new sensible defaults
+    // This fixes existing databases that had the old @default(1) values
+    if (settings.billingRamRate === 1 && settings.billingCpuRate === 1 && settings.billingDiskRate === 1) {
+      await prisma.settings.update({
+        where: { id: 'main' },
+        data: {
+          billingRamRate: 1024,    // 1GB RAM = 1 coin/hr
+          billingCpuRate: 100,     // 100% CPU = 1 coin/hr
+          billingDiskRate: 5120,   // 5GB disk = 1 coin/hr
+          billingDatabaseRate: 0,  // Not billed hourly
+          billingAllocationRate: 0,
+          billingBackupRate: 0,
+        },
+      });
+      console.log('✓ Migrated billing rates to sensible defaults');
+    }
   }
 
   console.log('✓ Database initialized');
