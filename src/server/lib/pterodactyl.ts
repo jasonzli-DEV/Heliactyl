@@ -59,6 +59,11 @@ async function pteroRequest(endpoint: string, options: PteroRequestOptions = {})
     throw new Error(`Pterodactyl API error: ${response.status} - ${error}`);
   }
 
+  // Handle 204 No Content (DELETE, suspend, unsuspend return empty response)
+  if (response.status === 204) {
+    return { success: true };
+  }
+
   return response.json();
 }
 
@@ -164,15 +169,11 @@ export async function updatePteroServer(serverId: number, options: {
 }
 
 export async function suspendPteroServer(serverId: number) {
-  const response = await pteroRequest(`/servers/${serverId}/suspend`, { method: 'POST' });
-  // Suspend returns 204 No Content on success, which is fine
-  return response || { success: true };
+  return pteroRequest(`/servers/${serverId}/suspend`, { method: 'POST' });
 }
 
 export async function unsuspendPteroServer(serverId: number) {
-  const response = await pteroRequest(`/servers/${serverId}/unsuspend`, { method: 'POST' });
-  // Unsuspend returns 204 No Content on success, which is fine
-  return response || { success: true };
+  return pteroRequest(`/servers/${serverId}/unsuspend`, { method: 'POST' });
 }
 
 // Location management

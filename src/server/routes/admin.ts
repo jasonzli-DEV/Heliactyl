@@ -128,6 +128,38 @@ router.get('/servers', asyncHandler(async (req: AuthRequest, res) => {
   });
 }));
 
+// DELETE /api/admin/servers/:id - Delete server from admin panel
+router.delete('/servers/:id', asyncHandler(async (req: AuthRequest, res) => {
+  const server = await prisma.server.findUnique({ where: { id: req.params.id } });
+  
+  if (!server) {
+    throw createError('Server not found', 404);
+  }
+
+  // Delete from Pterodactyl first
+  try {
+    await pterodactyl.deletePteroServer(server.pterodactylId);
+  } catch (error) {
+    console.error('Failed to delete server from Pterodactyl:', error);
+    // Continue with database deletion even if Pterodactyl deletion fails
+  }
+
+  // Delete from database
+  await prisma.server.delete({ where: { id: server.id } });
+
+  // Log action
+  await prisma.auditLog.create({
+    data: {
+      userId: req.user!.id,
+      action: 'ADMIN_SERVER_DELETED',
+      details: JSON.stringify({ serverId: server.id, name: server.name, userId: server.userId }),
+      ipAddress: req.ip || 'unknown',
+    },
+  });
+
+  res.json({ success: true });
+}));
+
 // Packages
 router.get('/packages', asyncHandler(async (req: AuthRequest, res) => {
   const packages = await prisma.package.findMany({ orderBy: { sortOrder: 'asc' } });
