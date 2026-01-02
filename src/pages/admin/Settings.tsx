@@ -18,6 +18,7 @@ interface SettingsData {
   allowNewUsers: boolean;
   maintenanceMode: boolean;
   maintenanceMessage: string | null;
+  footerText: string | null;
   defaultCoins: number;
   defaultRam: number;
   defaultDisk: number;
@@ -141,6 +142,7 @@ export default function AdminSettings() {
       allowNewUsers: fd.get('allowNewUsers') === 'on',
       maintenanceMode: fd.get('maintenanceMode') === 'on',
       maintenanceMessage: fd.get('maintenanceMessage') as string,
+      footerText: fd.get('footerText') as string,
       defaultCoins: parseInt(fd.get('defaultCoins') as string) || 0,
       defaultRam: parseInt(fd.get('defaultRam') as string) || 0,
       defaultDisk: parseInt(fd.get('defaultDisk') as string) || 0,
@@ -379,6 +381,19 @@ export default function AdminSettings() {
           <div className="mt-4">
             <label className="label">Maintenance Message</label>
             <input type="text" name="maintenanceMessage" defaultValue={settings?.maintenanceMessage || ''} className="input" />
+          </div>
+          <div className="mt-4">
+            <label className="label">Footer Text</label>
+            <input 
+              type="text" 
+              name="footerText" 
+              defaultValue={settings?.footerText || '© EnderBit Hosting 2025'} 
+              className="input" 
+              placeholder="© Your Site 2025"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Supports markdown: <code className="text-gray-400">**bold**</code>, <code className="text-gray-400">[link text](url)</code>
+            </p>
           </div>
         </div>
 

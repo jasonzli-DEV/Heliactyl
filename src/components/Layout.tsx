@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
+import { parseMarkdown } from '../lib/markdown';
+
 interface LayoutProps {
   isAdmin?: boolean;
 }
@@ -295,7 +297,7 @@ export default function Layout({ isAdmin = false }: LayoutProps) {
             <Outlet />
           </div>
           <footer className="px-6 py-4 text-center text-gray-600 text-sm border-t border-dark-700">
-            © EnderBit Hosting 2025
+            {parseMarkdown(settings?.footerText || '© EnderBit Hosting 2025')}
           </footer>
         </div>
       </main>

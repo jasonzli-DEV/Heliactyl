@@ -3,7 +3,6 @@ import { CreditCard, Loader2, Save } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
 interface BillingSettings {
-  billingEnabled: boolean;
   billingRamRate: number;
   billingCpuRate: number;
   billingDiskRate: number;
@@ -30,7 +29,6 @@ export default function AdminBilling() {
       }
       const data = await res.json();
       setSettings({
-        billingEnabled: data.settings?.billingEnabled ?? false,
         billingRamRate: data.settings?.billingRamRate || 1024,
         billingCpuRate: data.settings?.billingCpuRate || 50,
         billingDiskRate: data.settings?.billingDiskRate || 5120,
@@ -42,7 +40,6 @@ export default function AdminBilling() {
       console.error('Failed to load billing settings:', error);
       // Set defaults if fetch fails
       setSettings({
-        billingEnabled: false,
         billingRamRate: 1024,
         billingCpuRate: 50,
         billingDiskRate: 5120,
@@ -62,10 +59,9 @@ export default function AdminBilling() {
     try {
       const formData = new FormData(e.currentTarget);
       const data = {
-        billingEnabled: formData.get('billingEnabled') === 'on',
-        billingRamRate: parseFloat(formData.get('billingRamRate') as string) || 1,
-        billingCpuRate: parseFloat(formData.get('billingCpuRate') as string) || 1,
-        billingDiskRate: parseFloat(formData.get('billingDiskRate') as string) || 1,
+        billingRamRate: parseFloat(formData.get('billingRamRate') as string) || 1024,
+        billingCpuRate: parseFloat(formData.get('billingCpuRate') as string) || 50,
+        billingDiskRate: parseFloat(formData.get('billingDiskRate') as string) || 5120,
         maxRamSlider: (parseInt(formData.get('maxRamSlider') as string) || 12) * 1024, // Convert GB to MB
         maxDiskSlider: (parseInt(formData.get('maxDiskSlider') as string) || 50) * 1024, // Convert GB to MB
         maxCpuSlider: parseInt(formData.get('maxCpuSlider') as string) || 400,
@@ -118,14 +114,9 @@ export default function AdminBilling() {
             <CreditCard className="w-5 h-5" />
             Hourly Billing Rates
           </h2>
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="text-sm text-gray-400 mb-6">
             Set how many MB/% of resources 1 credit provides per hour. Servers consume credits hourly based on allocated resources. After running out of credits, servers are automatically suspended after 24 hours and deleted after another 24 hours.
           </p>
-          
-          <label className="flex items-center gap-2 mb-6">
-            <input type="checkbox" name="billingEnabled" defaultChecked={settings?.billingEnabled ?? false} className="rounded" />
-            <span className="text-sm text-gray-300">Enable Hourly Billing</span>
-          </label>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>

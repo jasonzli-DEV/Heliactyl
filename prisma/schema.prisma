@@ -131,6 +131,7 @@ model Settings {
   allowNewUsers         Boolean  @default(true)
   maintenanceMode       Boolean  @default(false)
   maintenanceMessage    String?
+  footerText            String?  @default("© EnderBit Hosting 2025")
   
   // Discord
   discordInvite         String?

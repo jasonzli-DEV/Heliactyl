@@ -10,6 +10,7 @@ interface Settings {
   allowNewUsers: boolean;
   maintenanceMode: boolean;
   maintenanceMessage: string | null;
+  footerText: string | null;
   discordInvite: string | null;
 }
 
@@ -29,6 +30,7 @@ const defaultSettings: Settings = {
   allowNewUsers: true,
   maintenanceMode: false,
   maintenanceMessage: null,
+  footerText: '© EnderBit Hosting 2025',
   discordInvite: null,
 };
 
