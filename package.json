@@ -1,6 +1,6 @@
 {
   "name": "enderactyl",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Modern Pterodactyl client area with admin dashboard",
   "main": "dist/server/index.js",
   "scripts": {

@@ -46,11 +46,11 @@ export async function processBilling() {
   
   const rates: BillingRates = {
     ramRate: settings.billingRamRate || 1024,
-    cpuRate: settings.billingCpuRate || 50,
+    cpuRate: settings.billingCpuRate || 100,
     diskRate: settings.billingDiskRate || 5120,
-    databaseRate: settings.billingDatabaseRate || 1,
-    allocationRate: settings.billingAllocationRate || 1,
-    backupRate: settings.billingBackupRate || 1,
+    databaseRate: settings.billingDatabaseRate || 0,
+    allocationRate: settings.billingAllocationRate || 0,
+    backupRate: settings.billingBackupRate || 0,
     gracePeriod: settings.billingGracePeriod || 24,
   };
   
@@ -177,11 +177,11 @@ export async function chargeUpfrontForServer(
   
   const rates: BillingRates = {
     ramRate: settings.billingRamRate || 1024,
-    cpuRate: settings.billingCpuRate || 50,
+    cpuRate: settings.billingCpuRate || 100,
     diskRate: settings.billingDiskRate || 5120,
-    databaseRate: settings.billingDatabaseRate || 1,
-    allocationRate: settings.billingAllocationRate || 1,
-    backupRate: settings.billingBackupRate || 1,
+    databaseRate: settings.billingDatabaseRate || 0,
+    allocationRate: settings.billingAllocationRate || 0,
+    backupRate: settings.billingBackupRate || 0,
     gracePeriod: settings.billingGracePeriod || 24,
   };
   

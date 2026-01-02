@@ -210,9 +210,9 @@ export default function AdminSettings() {
       billingRamRate: parseFloat(fd.get('billingRamRate') as string) || 1,
       billingCpuRate: parseFloat(fd.get('billingCpuRate') as string) || 1,
       billingDiskRate: parseFloat(fd.get('billingDiskRate') as string) || 1,
-      billingDatabaseRate: parseFloat(fd.get('billingDatabaseRate') as string) || 1,
-      billingAllocationRate: parseFloat(fd.get('billingAllocationRate') as string) || 1,
-      billingBackupRate: parseFloat(fd.get('billingBackupRate') as string) || 1,
+      billingDatabaseRate: parseFloat(fd.get('billingDatabaseRate') as string) || 0,
+      billingAllocationRate: parseFloat(fd.get('billingAllocationRate') as string) || 0,
+      billingBackupRate: parseFloat(fd.get('billingBackupRate') as string) || 0,
       billingGracePeriod: parseInt(fd.get('billingGracePeriod') as string) || 24,
     };
 
@@ -545,6 +545,110 @@ export default function AdminSettings() {
               <label className="label">Discord Invite Link</label>
               <input type="url" name="discordInvite" defaultValue={settings?.discordInvite || ''} className="input" placeholder="https://discord.gg/..." />
             </div>
+          </div>
+        </div>
+
+        {/* Billing Settings */}
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <CreditCard className="w-5 h-5" />
+            Hourly Billing Settings
+          </h2>
+          <p className="text-sm text-gray-400 mb-4">
+            Servers are billed hourly using a prepaid system. Users must have coins to keep servers running. 
+            If they run out of coins, the server is automatically paused.
+          </p>
+          
+          <label className="flex items-center gap-2 mb-6">
+            <input type="checkbox" name="billingEnabled" defaultChecked={settings?.billingEnabled} className="rounded" />
+            <span className="text-sm text-gray-300">Enable Hourly Billing</span>
+          </label>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <label className="label">RAM Rate (MB per coin/hr)</label>
+              <input 
+                type="number" 
+                name="billingRamRate" 
+                defaultValue={settings?.billingRamRate || 1024} 
+                className="input" 
+                min="1"
+                step="128"
+              />
+              <p className="text-xs text-gray-500 mt-1">e.g. 1024 = 1GB costs 1 coin/hr</p>
+            </div>
+            <div>
+              <label className="label">CPU Rate (% per coin/hr)</label>
+              <input 
+                type="number" 
+                name="billingCpuRate" 
+                defaultValue={settings?.billingCpuRate || 100} 
+                className="input" 
+                min="1"
+                step="10"
+              />
+              <p className="text-xs text-gray-500 mt-1">e.g. 100 = 100% costs 1 coin/hr</p>
+            </div>
+            <div>
+              <label className="label">Disk Rate (MB per coin/hr)</label>
+              <input 
+                type="number" 
+                name="billingDiskRate" 
+                defaultValue={settings?.billingDiskRate || 5120} 
+                className="input" 
+                min="1"
+                step="512"
+              />
+              <p className="text-xs text-gray-500 mt-1">e.g. 5120 = 5GB costs 1 coin/hr</p>
+            </div>
+            <div>
+              <label className="label">Database Rate (coins/hr)</label>
+              <input 
+                type="number" 
+                name="billingDatabaseRate" 
+                defaultValue={settings?.billingDatabaseRate || 0} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">0 = databases are free (permanent resource)</p>
+            </div>
+            <div>
+              <label className="label">Port Rate (coins/hr)</label>
+              <input 
+                type="number" 
+                name="billingAllocationRate" 
+                defaultValue={settings?.billingAllocationRate || 0} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">0 = ports are free (permanent resource)</p>
+            </div>
+            <div>
+              <label className="label">Backup Rate (coins/hr)</label>
+              <input 
+                type="number" 
+                name="billingBackupRate" 
+                defaultValue={settings?.billingBackupRate || 0} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">0 = backups are free (permanent resource)</p>
+            </div>
+          </div>
+
+          <div className="mt-4 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
+            <h3 className="text-sm font-medium text-blue-300 mb-2">Cost Calculation Example</h3>
+            <p className="text-xs text-gray-400">
+              A server with 2GB RAM, 100% CPU, 10GB disk at current rates would cost: <br />
+              <code className="text-blue-400">
+                ({2048}/{settings?.billingRamRate || 1024}) + ({100}/{settings?.billingCpuRate || 100}) + ({10240}/{settings?.billingDiskRate || 5120}) = {
+                  Math.ceil((2048/(settings?.billingRamRate || 1024)) + (100/(settings?.billingCpuRate || 100)) + (10240/(settings?.billingDiskRate || 5120)))
+                } coins/hour
+              </code>
+            </p>
           </div>
         </div>
 
