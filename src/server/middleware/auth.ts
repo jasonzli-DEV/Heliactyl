@@ -188,7 +188,8 @@ export async function optionalAuth(req: AuthRequest, res: Response, next: NextFu
         where: { id: decoded.id },
       });
 
-      if (user && !user.banned) {
+      // Allow banned users to authenticate (they need auth for ban appeals)
+      if (user) {
         req.user = {
           id: user.id,
           discordId: user.discordId,

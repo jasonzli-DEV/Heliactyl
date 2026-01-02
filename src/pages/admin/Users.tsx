@@ -286,10 +286,7 @@ export default function AdminUsers() {
                     banExpiresAt = now.toISOString();
                   }
                 }
-                // If unbanning or setting permanent ban, explicitly set to null
-                if (!banned || !banDuration || banDuration === '') {
-                  banExpiresAt = null;
-                }
+                // For permanent ban or no ban, banExpiresAt stays null
                 
                 updateUser(editingUser.id, {
                   isAdmin: formData.get('isAdmin') === 'on',

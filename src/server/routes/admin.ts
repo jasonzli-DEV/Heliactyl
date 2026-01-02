@@ -65,6 +65,20 @@ router.get('/users', asyncHandler(async (req: AuthRequest, res) => {
 
 // PUT /api/admin/users/:id - Whitelist allowed fields to prevent mass assignment
 router.put('/users/:id', asyncHandler(async (req: AuthRequest, res) => {
+  // Get target user first
+  const targetUser = await prisma.user.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!targetUser) {
+    throw createError('User not found', 404);
+  }
+
+  // Prevent banning admins (including self)
+  if (req.body.banned && targetUser.isAdmin) {
+    throw createError('Cannot ban admin users', 403);
+  }
+
   // Whitelist allowed fields to prevent privilege escalation
   const allowedFields = ['username', 'coins', 'ram', 'disk', 'cpu', 'servers', 'databases', 'backups', 'allocations', 'banned', 'banReason', 'banExpiresAt', 'packageId'] as const;
   const updates: Record<string, unknown> = {};
