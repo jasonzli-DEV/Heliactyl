@@ -82,7 +82,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-2">Admin Dashboard</h1>
-        <p className="text-gray-400">Overview of your Heliactyl instance.</p>
+        <p className="text-gray-400">Overview of your EnderBit dashboard.</p>
       </div>
 
       {/* Stats grid */}

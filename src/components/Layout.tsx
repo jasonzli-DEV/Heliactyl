@@ -82,7 +82,7 @@ export default function Layout({ isAdmin = false }: LayoutProps) {
             <img src={settings.logo} alt={settings.siteName} className="h-8" />
           ) : (
             <span className="text-xl font-bold text-white">
-              {settings?.siteName || 'Heliactyl'}
+              {settings?.siteName || 'EnderBit'}
             </span>
           )}
           {isAdmin && (
@@ -200,7 +200,7 @@ export default function Layout({ isAdmin = false }: LayoutProps) {
             <img src={settings.logo} alt={settings.siteName} className="h-8" />
           ) : (
             <span className="text-lg font-bold text-white">
-              {settings?.siteName || 'Heliactyl'}
+              {settings?.siteName || 'EnderBit'}
             </span>
           )}
         </div>

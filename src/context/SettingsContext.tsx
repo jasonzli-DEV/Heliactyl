@@ -20,7 +20,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: Settings = {
-  siteName: 'Heliactyl',
+  siteName: 'EnderBit',
   siteDescription: null,
   logo: null,
   favicon: null,
@@ -58,7 +58,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Update document title and favicon when settings change
   useEffect(() => {
     if (settings) {
-      document.title = settings.siteName || 'Heliactyl';
+      document.title = settings.siteName || 'EnderBit';
       if (settings.favicon) {
         const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
         if (link) {

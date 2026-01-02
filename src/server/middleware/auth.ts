@@ -9,7 +9,7 @@ async function getJwtSecret(): Promise<string> {
   if (cachedJwtSecret) return cachedJwtSecret;
   
   const settings = await prisma.settings.findFirst();
-  cachedJwtSecret = settings?.jwtSecret || 'heliactyl-dev-secret-change-me';
+  cachedJwtSecret = settings?.jwtSecret || 'enderbit-dev-secret-change-me';
   return cachedJwtSecret;
 }
 

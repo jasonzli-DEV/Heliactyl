@@ -236,7 +236,7 @@ export default function AdminSettings() {
     <div className="p-6 lg:p-8 max-w-4xl mx-auto animate-fadeIn">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-2">Settings</h1>
-        <p className="text-gray-400">Configure your Heliactyl instance.</p>
+        <p className="text-gray-400">Configure your EnderBit dashboard.</p>
       </div>
 
       {/* System Update Card */}

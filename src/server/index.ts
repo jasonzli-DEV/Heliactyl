@@ -66,7 +66,7 @@ async function start() {
     await initializeDatabase();
     
     app.listen(PORT, () => {
-      console.log(`🚀 Heliactyl v13 running on http://localhost:${PORT}`);
+      console.log(`🚀 EnderBit Dashboard running on http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Egg, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Egg, Plus, Edit, Trash2, Loader2, RefreshCw } from 'lucide-react';
 
 interface EggData {
   id: string;
@@ -16,6 +16,7 @@ interface EggData {
 export default function AdminEggs() {
   const [eggs, setEggs] = useState<EggData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [editing, setEditing] = useState<EggData | null>(null);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,6 +70,28 @@ export default function AdminEggs() {
     }
   };
 
+  const syncEggs = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/admin/eggs/sync', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.synced > 0) {
+        alert(`Synced ${data.synced} eggs from Pterodactyl`);
+        fetchEggs();
+      } else {
+        alert('No new eggs to sync');
+      }
+    } catch (error) {
+      console.error('Failed to sync eggs:', error);
+      alert('Failed to sync eggs from Pterodactyl');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fadeIn">
       <div className="flex items-center justify-between mb-8">
@@ -76,9 +99,19 @@ export default function AdminEggs() {
           <h1 className="text-2xl font-bold text-white mb-2">Eggs</h1>
           <p className="text-gray-400">Server types available for deployment.</p>
         </div>
-        <button onClick={() => setCreating(true)} className="btn-primary">
-          <Plus className="w-4 h-4" /> Add Egg
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={syncEggs}
+            disabled={syncing}
+            className="btn-secondary"
+          >
+            {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Sync from Pterodactyl
+          </button>
+          <button onClick={() => setCreating(true)} className="btn-primary">
+            <Plus className="w-4 h-4" /> Add Egg
+          </button>
+        </div>
       </div>
 
       {loading ? (

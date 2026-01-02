@@ -9,7 +9,7 @@ interface SetupStep {
 }
 
 const steps: SetupStep[] = [
-  { id: 1, title: 'Welcome', description: 'Let\'s configure your Heliactyl dashboard' },
+  { id: 1, title: 'Welcome', description: 'Let\'s configure your EnderBit dashboard' },
   { id: 2, title: 'Discord OAuth', description: 'Set up authentication with Discord' },
   { id: 3, title: 'Pterodactyl API', description: 'Connect to your Pterodactyl panel' },
   { id: 4, title: 'Admin Account', description: 'Configure the initial admin user' },
@@ -24,7 +24,7 @@ export default function Setup() {
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
 
   const [config, setConfig] = useState({
-    siteName: 'Heliactyl',
+    siteName: 'EnderBit',
     siteUrl: window.location.origin,
     discordClientId: '',
     discordClientSecret: '',
@@ -103,7 +103,7 @@ export default function Setup() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-500/20 mb-4">
                 <Settings className="w-8 h-8 text-accent-400" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Welcome to Heliactyl v13</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">Welcome to EnderBit Dashboard</h2>
               <p className="text-gray-400">
                 This wizard will help you configure your game server dashboard.
                 You'll need your Discord application credentials and Pterodactyl API key.
@@ -307,7 +307,7 @@ export default function Setup() {
             </div>
             <h2 className="text-2xl font-bold text-white">Setup Complete!</h2>
             <p className="text-gray-400">
-              Your Heliactyl dashboard is now configured and ready to use.
+              Your EnderBit dashboard is now configured and ready to use.
               Click the button below to log in with Discord.
             </p>
             <button
@@ -412,7 +412,7 @@ export default function Setup() {
 
         {/* Footer */}
         <p className="text-center text-gray-600 text-sm mt-6">
-          Heliactyl v13 • © EnderBit Hosting 2025
+          EnderBit Dashboard • © EnderBit Hosting 2025
         </p>
       </div>
     </div>

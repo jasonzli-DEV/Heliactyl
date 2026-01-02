@@ -45,7 +45,7 @@ export default function Login() {
             />
           ) : (
             <h1 className="text-4xl font-bold text-white mb-2">
-              {settings?.siteName || 'Heliactyl'}
+              {settings?.siteName || 'EnderBit'}
             </h1>
           )}
           <p className="text-gray-400">

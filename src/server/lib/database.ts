@@ -12,7 +12,7 @@ export async function initializeDatabase() {
     await prisma.settings.create({
       data: {
         id: 'main',
-        siteName: 'Heliactyl',
+        siteName: 'EnderBit',
         allowNewUsers: true,
         storeEnabled: true,
         afkEnabled: true,

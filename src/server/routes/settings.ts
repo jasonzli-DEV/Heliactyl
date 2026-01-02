@@ -11,7 +11,7 @@ router.get('/public', asyncHandler(async (req, res) => {
 
   if (!settings) {
     return res.json({
-      siteName: 'Heliactyl',
+      siteName: 'EnderBit',
       siteDescription: null,
       logo: null,
       favicon: null,

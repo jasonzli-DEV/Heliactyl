@@ -96,7 +96,7 @@ router.post('/link-pterodactyl', asyncHandler(async (req: AuthRequest, res) => {
 
   // Create Pterodactyl user
   const pteroUser = await pterodactyl.createPteroUser(
-    user.email || `${user.discordId}@heliactyl.local`,
+    user.email || `${user.discordId}@enderbit.local`,
     user.username
   ) as { attributes: { id: number } };
 

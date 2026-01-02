@@ -23,6 +23,12 @@ router.get('/login', asyncHandler(async (req, res) => {
   res.redirect(url);
 }));
 
+// GET /api/auth/discord - Alias for login
+router.get('/discord', asyncHandler(async (req, res) => {
+  const url = await getDiscordAuthUrl();
+  res.redirect(url);
+}));
+
 // GET /api/auth/callback - Discord OAuth callback
 router.get('/callback', asyncHandler(async (req, res) => {
   const { code } = req.query;

@@ -18,7 +18,7 @@ router.get('/status', asyncHandler(async (req, res) => {
 
   res.json({
     setupComplete: !!isComplete,
-    siteName: settings?.siteName || 'Heliactyl',
+    siteName: settings?.siteName || 'EnderBit',
   });
 }));
 
@@ -98,7 +98,7 @@ router.post('/complete', asyncHandler(async (req, res) => {
   await prisma.settings.upsert({
     where: { id: 'main' },
     update: {
-      siteName: siteName || 'Heliactyl',
+      siteName: siteName || 'EnderBit',
       siteUrl: normalizedSiteUrl,
       discordClientId,
       discordClientSecret,
@@ -111,7 +111,7 @@ router.post('/complete', asyncHandler(async (req, res) => {
     },
     create: {
       id: 'main',
-      siteName: siteName || 'Heliactyl',
+      siteName: siteName || 'EnderBit',
       siteUrl: normalizedSiteUrl,
       discordClientId,
       discordClientSecret,
