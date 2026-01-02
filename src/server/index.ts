@@ -79,8 +79,8 @@ app.use('/api', apiLimiter);
 
 // Global maintenance mode middleware - blocks all API requests except setup/auth
 app.use('/api', async (req, res, next) => {
-  // Allow setup and auth routes (so admins can login during maintenance)
-  if (req.path.startsWith('/setup') || req.path.startsWith('/auth') || req.path.startsWith('/settings')) {
+  // Allow setup, auth, settings, and ban-appeal routes
+  if (req.path.startsWith('/setup') || req.path.startsWith('/auth') || req.path.startsWith('/settings') || req.path.startsWith('/ban-appeal')) {
     return next();
   }
   

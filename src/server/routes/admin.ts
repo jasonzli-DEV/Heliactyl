@@ -73,7 +73,8 @@ router.put('/users/:id', asyncHandler(async (req: AuthRequest, res) => {
     if (req.body[field] !== undefined) {
       // Handle banExpiresAt - convert ISO string to Date or null
       if (field === 'banExpiresAt') {
-        updates[field] = req.body[field] ? new Date(req.body[field]) : null;
+        const value = req.body[field];
+        updates[field] = (value && value !== '') ? new Date(value) : null;
       } else {
         updates[field] = req.body[field];
       }
@@ -172,8 +173,8 @@ router.get('/packages', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 router.post('/packages', asyncHandler(async (req: AuthRequest, res) => {
-  const { name, displayName, price = 0, ram = 1024, disk = 5120, cpu = 100, servers = 1, databases = 1, backups = 1, allocations = 1 } = req.body;
-  const pkg = await prisma.package.create({ data: { name, displayName: displayName || name, price, ram, disk, cpu, servers, databases, backups, allocations } });
+  const { name, displayName, description, price = 0, ram = 1024, disk = 5120, cpu = 100, servers = 1, databases = 1, backups = 1, allocations = 1 } = req.body;
+  const pkg = await prisma.package.create({ data: { name, displayName: displayName || name, description, price, ram, disk, cpu, servers, databases, backups, allocations } });
   res.status(201).json({ package: pkg });
 }));
 
