@@ -164,11 +164,15 @@ export async function updatePteroServer(serverId: number, options: {
 }
 
 export async function suspendPteroServer(serverId: number) {
-  return pteroRequest(`/servers/${serverId}/suspend`, { method: 'POST' });
+  const response = await pteroRequest(`/servers/${serverId}/suspend`, { method: 'POST' });
+  // Suspend returns 204 No Content on success, which is fine
+  return response || { success: true };
 }
 
 export async function unsuspendPteroServer(serverId: number) {
-  return pteroRequest(`/servers/${serverId}/unsuspend`, { method: 'POST' });
+  const response = await pteroRequest(`/servers/${serverId}/unsuspend`, { method: 'POST' });
+  // Unsuspend returns 204 No Content on success, which is fine
+  return response || { success: true };
 }
 
 // Location management
