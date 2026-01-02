@@ -42,15 +42,22 @@ export default function CreateServer() {
   const [variables, setVariables] = useState<EggVariable[]>([]);
   const [loadingVariables, setLoadingVariables] = useState(false);
   const [expandedNests, setExpandedNests] = useState<Set<number>>(new Set());
-  const [sliderMaxes, setSliderMaxes] = useState({ maxRamSlider: 12288, maxDiskSlider: 51200, maxCpuSlider: 400 });
+  const [sliderConfig, setSliderConfig] = useState({ 
+    maxRamSlider: 12288, 
+    maxDiskSlider: 51200, 
+    maxCpuSlider: 400,
+    billingRamRate: 1024,  // MB per coin (default 1GB)
+    billingCpuRate: 100,   // % per coin (default 100%)
+    billingDiskRate: 5120, // MB per coin (default 5GB)
+  });
   
   const [form, setForm] = useState({
     name: '',
     locationId: '',
     eggId: '',
-    ram: 1024,      // Minimum RAM
-    disk: 2048,     // Minimum Disk
-    cpu: 50,        // Minimum CPU
+    ram: 1024,      // Will be updated to match billing rate
+    disk: 5120,     // Will be updated to match billing rate
+    cpu: 100,       // Will be updated to match billing rate
     databases: 0,
     backups: 0,
     allocations: 1,
@@ -88,13 +95,28 @@ export default function CreateServer() {
       setLocations(locData.locations || []);
       setEggs(eggData.eggs || []);
       
-      // Get slider maximums from settings (stored in MB, same as we use)
+      // Get slider maximums and billing rates from settings
       if (settingsData) {
-        setSliderMaxes({
+        const ramRate = settingsData.billingRamRate || 1024;
+        const cpuRate = settingsData.billingCpuRate || 100;
+        const diskRate = settingsData.billingDiskRate || 5120;
+        
+        setSliderConfig({
           maxRamSlider: settingsData.maxRamSlider || 12288,
           maxDiskSlider: settingsData.maxDiskSlider || 51200,
           maxCpuSlider: settingsData.maxCpuSlider || 400,
+          billingRamRate: ramRate,
+          billingCpuRate: cpuRate,
+          billingDiskRate: diskRate,
         });
+        
+        // Update form with minimum values based on billing rates
+        setForm(prev => ({
+          ...prev,
+          ram: ramRate,
+          disk: diskRate,
+          cpu: cpuRate,
+        }));
       }
     } catch (error) {
       console.error('Failed to fetch options:', error);
@@ -397,18 +419,21 @@ export default function CreateServer() {
                     <span className="text-sm font-medium text-white">
                       {(form.ram / 1024).toFixed(1)} GB
                     </span>
+                    <span className="text-xs text-gray-500">
+                      ({Math.ceil(form.ram / sliderConfig.billingRamRate)} coins/hr)
+                    </span>
                   </div>
                 </div>
                 <input
                   type="range"
                   value={form.ram}
                   onChange={(e) => setForm({ ...form, ram: parseInt(e.target.value) })}
-                  min={1024}
-                  max={sliderMaxes.maxRamSlider}
-                  step={1024}
+                  min={sliderConfig.billingRamRate}
+                  max={sliderConfig.maxRamSlider}
+                  step={sliderConfig.billingRamRate}
                   className="slider w-full"
                   style={{
-                    background: `linear-gradient(to right, rgb(74, 222, 128) 0%, rgb(74, 222, 128) ${((form.ram - 1024) / (sliderMaxes.maxRamSlider - 1024)) * 100}%, rgb(31, 41, 55) ${((form.ram - 1024) / (sliderMaxes.maxRamSlider - 1024)) * 100}%, rgb(31, 41, 55) 100%)`
+                    background: `linear-gradient(to right, rgb(74, 222, 128) 0%, rgb(74, 222, 128) ${((form.ram - sliderConfig.billingRamRate) / (sliderConfig.maxRamSlider - sliderConfig.billingRamRate)) * 100}%, rgb(31, 41, 55) ${((form.ram - sliderConfig.billingRamRate) / (sliderConfig.maxRamSlider - sliderConfig.billingRamRate)) * 100}%, rgb(31, 41, 55) 100%)`
                   }}
                 />
               </div>
@@ -422,18 +447,21 @@ export default function CreateServer() {
                     <span className="text-sm font-medium text-white">
                       {(form.disk / 1024).toFixed(1)} GB
                     </span>
+                    <span className="text-xs text-gray-500">
+                      ({Math.ceil(form.disk / sliderConfig.billingDiskRate)} coins/hr)
+                    </span>
                   </div>
                 </div>
                 <input
                   type="range"
                   value={form.disk}
                   onChange={(e) => setForm({ ...form, disk: parseInt(e.target.value) })}
-                  min={2048}
-                  max={sliderMaxes.maxDiskSlider}
-                  step={1024}
+                  min={sliderConfig.billingDiskRate}
+                  max={sliderConfig.maxDiskSlider}
+                  step={sliderConfig.billingDiskRate}
                   className="slider w-full"
                   style={{
-                    background: `linear-gradient(to right, rgb(250, 204, 21) 0%, rgb(250, 204, 21) ${((form.disk - 2048) / (sliderMaxes.maxDiskSlider - 2048)) * 100}%, rgb(31, 41, 55) ${((form.disk - 2048) / (sliderMaxes.maxDiskSlider - 2048)) * 100}%, rgb(31, 41, 55) 100%)`
+                    background: `linear-gradient(to right, rgb(250, 204, 21) 0%, rgb(250, 204, 21) ${((form.disk - sliderConfig.billingDiskRate) / (sliderConfig.maxDiskSlider - sliderConfig.billingDiskRate)) * 100}%, rgb(31, 41, 55) ${((form.disk - sliderConfig.billingDiskRate) / (sliderConfig.maxDiskSlider - sliderConfig.billingDiskRate)) * 100}%, rgb(31, 41, 55) 100%)`
                   }}
                 />
               </div>
@@ -447,18 +475,21 @@ export default function CreateServer() {
                     <span className="text-sm font-medium text-white">
                       {form.cpu}%
                     </span>
+                    <span className="text-xs text-gray-500">
+                      ({Math.ceil(form.cpu / sliderConfig.billingCpuRate)} coins/hr)
+                    </span>
                   </div>
                 </div>
                 <input
                   type="range"
                   value={form.cpu}
                   onChange={(e) => setForm({ ...form, cpu: parseInt(e.target.value) })}
-                  min={50}
-                  max={sliderMaxes.maxCpuSlider}
-                  step={50}
+                  min={sliderConfig.billingCpuRate}
+                  max={sliderConfig.maxCpuSlider}
+                  step={sliderConfig.billingCpuRate}
                   className="slider w-full"
                   style={{
-                    background: `linear-gradient(to right, rgb(248, 113, 113) 0%, rgb(248, 113, 113) ${((form.cpu - 50) / (sliderMaxes.maxCpuSlider - 50)) * 100}%, rgb(31, 41, 55) ${((form.cpu - 50) / (sliderMaxes.maxCpuSlider - 50)) * 100}%, rgb(31, 41, 55) 100%)`
+                    background: `linear-gradient(to right, rgb(248, 113, 113) 0%, rgb(248, 113, 113) ${((form.cpu - sliderConfig.billingCpuRate) / (sliderConfig.maxCpuSlider - sliderConfig.billingCpuRate)) * 100}%, rgb(31, 41, 55) ${((form.cpu - sliderConfig.billingCpuRate) / (sliderConfig.maxCpuSlider - sliderConfig.billingCpuRate)) * 100}%, rgb(31, 41, 55) 100%)`
                   }}
                 />
               </div>

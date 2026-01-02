@@ -37,15 +37,18 @@ export default function EditServer() {
   const [saving, setSaving] = useState(false);
   const [server, setServer] = useState<ServerData | null>(null);
   const [userResources, setUserResources] = useState<UserResources | null>(null);
-  const [sliderMaxes, setSliderMaxes] = useState({
+  const [sliderConfig, setSliderConfig] = useState({
     maxRamSlider: 12288,
     maxDiskSlider: 51200,
     maxCpuSlider: 400,
+    billingRamRate: 1024,
+    billingCpuRate: 100,
+    billingDiskRate: 5120,
   });
   const [form, setForm] = useState({
     ram: 1024,
-    disk: 2048,
-    cpu: 50,
+    disk: 5120,
+    cpu: 100,
     databases: 0,
     backups: 0,
     allocations: 1,
@@ -74,10 +77,13 @@ export default function EditServer() {
       const res = await fetch('/api/settings/public', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setSliderMaxes({
+        setSliderConfig({
           maxRamSlider: data.maxRamSlider || 12288,
           maxDiskSlider: data.maxDiskSlider || 51200,
           maxCpuSlider: data.maxCpuSlider || 400,
+          billingRamRate: data.billingRamRate || 1024,
+          billingCpuRate: data.billingCpuRate || 100,
+          billingDiskRate: data.billingDiskRate || 5120,
         });
       }
     } catch (error) {
@@ -194,7 +200,7 @@ export default function EditServer() {
                     {(form.ram / 1024).toFixed(1)} GB
                   </span>
                   <span className="text-xs text-gray-500">
-                    / {(sliderMaxes.maxRamSlider / 1024).toFixed(1)} GB max
+                    ({Math.ceil(form.ram / sliderConfig.billingRamRate)} coins/hr)
                   </span>
                 </div>
               </div>
@@ -202,12 +208,12 @@ export default function EditServer() {
                 type="range"
                 value={form.ram}
                 onChange={(e) => setForm({ ...form, ram: parseInt(e.target.value) })}
-                min={1024}
-                max={sliderMaxes.maxRamSlider}
-                step={1024}
+                min={sliderConfig.billingRamRate}
+                max={sliderConfig.maxRamSlider}
+                step={sliderConfig.billingRamRate}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(74, 222, 128) 0%, rgb(74, 222, 128) ${((form.ram - 1024) / (sliderMaxes.maxRamSlider - 1024)) * 100}%, rgb(31, 41, 55) ${((form.ram - 1024) / (sliderMaxes.maxRamSlider - 1024)) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(74, 222, 128) 0%, rgb(74, 222, 128) ${((form.ram - sliderConfig.billingRamRate) / (sliderConfig.maxRamSlider - sliderConfig.billingRamRate)) * 100}%, rgb(31, 41, 55) ${((form.ram - sliderConfig.billingRamRate) / (sliderConfig.maxRamSlider - sliderConfig.billingRamRate)) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>
@@ -223,7 +229,7 @@ export default function EditServer() {
                     {(form.disk / 1024).toFixed(1)} GB
                   </span>
                   <span className="text-xs text-gray-500">
-                    / {(sliderMaxes.maxDiskSlider / 1024).toFixed(1)} GB max
+                    ({Math.ceil(form.disk / sliderConfig.billingDiskRate)} coins/hr)
                   </span>
                 </div>
               </div>
@@ -231,12 +237,12 @@ export default function EditServer() {
                 type="range"
                 value={form.disk}
                 onChange={(e) => setForm({ ...form, disk: parseInt(e.target.value) })}
-                min={2048}
-                max={sliderMaxes.maxDiskSlider}
-                step={1024}
+                min={sliderConfig.billingDiskRate}
+                max={sliderConfig.maxDiskSlider}
+                step={sliderConfig.billingDiskRate}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(250, 204, 21) 0%, rgb(250, 204, 21) ${((form.disk - 2048) / (sliderMaxes.maxDiskSlider - 2048)) * 100}%, rgb(31, 41, 55) ${((form.disk - 2048) / (sliderMaxes.maxDiskSlider - 2048)) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(250, 204, 21) 0%, rgb(250, 204, 21) ${((form.disk - sliderConfig.billingDiskRate) / (sliderConfig.maxDiskSlider - sliderConfig.billingDiskRate)) * 100}%, rgb(31, 41, 55) ${((form.disk - sliderConfig.billingDiskRate) / (sliderConfig.maxDiskSlider - sliderConfig.billingDiskRate)) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>
@@ -252,7 +258,7 @@ export default function EditServer() {
                     {form.cpu}%
                   </span>
                   <span className="text-xs text-gray-500">
-                    / {sliderMaxes.maxCpuSlider}% max
+                    ({Math.ceil(form.cpu / sliderConfig.billingCpuRate)} coins/hr)
                   </span>
                 </div>
               </div>
@@ -260,12 +266,12 @@ export default function EditServer() {
                 type="range"
                 value={form.cpu}
                 onChange={(e) => setForm({ ...form, cpu: parseInt(e.target.value) })}
-                min={50}
-                max={sliderMaxes.maxCpuSlider}
-                step={50}
+                min={sliderConfig.billingCpuRate}
+                max={sliderConfig.maxCpuSlider}
+                step={sliderConfig.billingCpuRate}
                 className="slider w-full"
                 style={{
-                  background: `linear-gradient(to right, rgb(248, 113, 113) 0%, rgb(248, 113, 113) ${((form.cpu - 50) / (sliderMaxes.maxCpuSlider - 50)) * 100}%, rgb(31, 41, 55) ${((form.cpu - 50) / (sliderMaxes.maxCpuSlider - 50)) * 100}%, rgb(31, 41, 55) 100%)`
+                  background: `linear-gradient(to right, rgb(248, 113, 113) 0%, rgb(248, 113, 113) ${((form.cpu - sliderConfig.billingCpuRate) / (sliderConfig.maxCpuSlider - sliderConfig.billingCpuRate)) * 100}%, rgb(31, 41, 55) ${((form.cpu - sliderConfig.billingCpuRate) / (sliderConfig.maxCpuSlider - sliderConfig.billingCpuRate)) * 100}%, rgb(31, 41, 55) 100%)`
                 }}
               />
             </div>

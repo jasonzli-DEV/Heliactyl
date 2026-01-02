@@ -169,7 +169,7 @@ export default function AdminBilling() {
                 defaultValue={settings?.billingRamRate ?? 1024} 
                 className="input" 
                 min="1"
-                step="128"
+                step="1"
               />
               <p className="text-xs text-gray-500 mt-1">MB of RAM per coin/hour</p>
               <p className="text-xs text-blue-400 mt-1">1024 = 1GB costs 1 coin/hr</p>
@@ -182,7 +182,7 @@ export default function AdminBilling() {
                 defaultValue={settings?.billingCpuRate ?? 100} 
                 className="input" 
                 min="1"
-                step="10"
+                step="1"
               />
               <p className="text-xs text-gray-500 mt-1">% CPU per coin/hour</p>
               <p className="text-xs text-blue-400 mt-1">100 = 100% CPU costs 1 coin/hr</p>
@@ -195,7 +195,7 @@ export default function AdminBilling() {
                 defaultValue={settings?.billingDiskRate ?? 5120} 
                 className="input" 
                 min="1"
-                step="512"
+                step="1"
               />
               <p className="text-xs text-gray-500 mt-1">MB of disk per coin/hour</p>
               <p className="text-xs text-blue-400 mt-1">5120 = 5GB costs 1 coin/hr</p>

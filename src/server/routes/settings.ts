@@ -55,6 +55,9 @@ router.get('/public', asyncHandler(async (req, res) => {
     maxRamSlider: settings.maxRamSlider,
     maxDiskSlider: settings.maxDiskSlider,
     maxCpuSlider: settings.maxCpuSlider,
+    billingRamRate: settings.billingRamRate,
+    billingCpuRate: settings.billingCpuRate,
+    billingDiskRate: settings.billingDiskRate,
   });
 }));
 
