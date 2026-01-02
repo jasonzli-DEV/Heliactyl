@@ -1,0 +1,390 @@
+// Heliactyl v13 - Prisma Schema
+// This schema is designed for SQLite by default but can be changed to PostgreSQL or MySQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./heliactyl.db"
+}
+
+// ============================================================================
+// USER MODEL
+// ============================================================================
+
+model User {
+  id                   String   @id @default(uuid())
+  discordId            String   @unique
+  username             String
+  email                String?
+  avatar               String?
+  isAdmin              Boolean  @default(false)
+  banned               Boolean  @default(false)
+  banReason            String?
+  
+  // Discord OAuth tokens
+  discordAccessToken   String?
+  discordRefreshToken  String?
+  
+  // Resources (total available)
+  coins                Int      @default(0)
+  ram                  Int      @default(1024)
+  disk                 Int      @default(5120)
+  cpu                  Int      @default(100)
+  servers              Int      @default(1)
+  databases            Int      @default(1)
+  backups              Int      @default(1)
+  allocations          Int      @default(1)
+  
+  // Pterodactyl account link
+  pterodactylId        Int?
+  
+  // Timestamps
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  lastLogin            DateTime?
+  
+  // IP tracking
+  registrationIp       String?
+  lastIp               String?
+  
+  // Relations
+  ownedServers         Server[]
+  couponsUsed          CouponUse[]
+  transactions         Transaction[]
+  sessions             Session[]
+  
+  @@index([discordId])
+}
+
+// ============================================================================
+// SERVER MODEL
+// ============================================================================
+
+model Server {
+  id              String    @id @default(uuid())
+  pterodactylId   Int       @unique
+  name            String
+  
+  // Resources allocated to this server
+  ram             Int
+  disk            Int
+  cpu             Int
+  databases       Int       @default(1)
+  backups         Int       @default(1)
+  allocations     Int       @default(1)
+  
+  // Owner
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Location & Egg
+  locationId      String
+  location        Location  @relation(fields: [locationId], references: [id])
+  eggId           String
+  egg             Egg       @relation(fields: [eggId], references: [id])
+  
+  // Renewal
+  renewalDate     DateTime?
+  suspended       Boolean   @default(false)
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([pterodactylId])
+}
+
+// ============================================================================
+// SETTINGS MODEL
+// ============================================================================
+
+model Settings {
+  id                    String   @id @default("main")
+  
+  // Site branding
+  siteName              String   @default("Heliactyl")
+  siteUrl               String?
+  siteDescription       String?
+  logo                  String?
+  favicon               String?
+  theme                 String   @default("dark")
+  accentColor           String   @default("#6366f1")
+  
+  // Feature flags
+  allowNewUsers         Boolean  @default(true)
+  maintenanceMode       Boolean  @default(false)
+  maintenanceMessage    String?
+  
+  // Discord
+  discordInvite         String?
+  
+  // Pterodactyl connection
+  pterodactylUrl        String?
+  pterodactylApiKey     String?
+  pterodactylKey        String?
+  
+  // Discord OAuth
+  discordClientId       String?
+  discordClientSecret   String?
+  discordRedirectUri    String?
+  
+  // Admin
+  adminDiscordId        String?
+  
+  // Secrets (auto-generated)
+  jwtSecret             String?
+  sessionSecret         String?
+  
+  // Default resources for new users
+  defaultCoins          Int      @default(100)
+  defaultRam            Int      @default(1024)
+  defaultDisk           Int      @default(5120)
+  defaultCpu            Int      @default(100)
+  defaultServers        Int      @default(1)
+  defaultDatabases      Int      @default(1)
+  defaultBackups        Int      @default(1)
+  defaultAllocations    Int      @default(1)
+  
+  // AFK settings (deprecated - use earn)
+  afkEnabled            Boolean  @default(true)
+  afkCoins              Int      @default(1)
+  afkCoinsPerMinute     Int      @default(1)
+  afkMaxMinutes         Int      @default(60)
+  afkInterval           Int      @default(60)
+  
+  // Earn settings (Cuty.io style link earning)
+  earnEnabled           Boolean  @default(true)
+  earnLinks             String?  // JSON array of earn links
+  cutyApiToken          String?  // Cuty.io API token for quick links
+  
+  // Store settings
+  storeEnabled          Boolean  @default(true)
+  ramPrice              Int      @default(10)
+  diskPrice             Int      @default(10)
+  cpuPrice              Int      @default(20)
+  serverPrice           Int      @default(100)
+  
+  // Timestamps
+  updatedAt             DateTime @updatedAt
+}
+
+// ============================================================================
+// PACKAGE MODEL
+// ============================================================================
+
+model Package {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  displayName   String
+  description   String?
+  enabled       Boolean  @default(true)
+  
+  // Resources included
+  ram           Int      @default(1024)
+  disk          Int      @default(5120)
+  cpu           Int      @default(100)
+  servers       Int      @default(1)
+  databases     Int      @default(1)
+  backups       Int      @default(1)
+  allocations   Int      @default(1)
+  
+  // Pricing (coins)
+  price         Int      @default(0)
+  
+  // Order for display
+  sortOrder     Int      @default(0)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================================================
+// LOCATION MODEL
+// ============================================================================
+
+model Location {
+  id              String    @id @default(uuid())
+  pterodactylId   Int       @unique
+  name            String
+  description     String?
+  enabled         Boolean   @default(true)
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  servers         Server[]
+}
+
+// ============================================================================
+// EGG MODEL
+// ============================================================================
+
+model Egg {
+  id              String    @id @default(uuid())
+  pterodactylId   Int
+  nestId          Int
+  name            String
+  displayName     String
+  description     String?
+  enabled         Boolean   @default(true)
+  
+  // Resource requirements
+  minRam          Int       @default(512)
+  minDisk         Int       @default(512)
+  minCpu          Int       @default(50)
+  
+  // Resource maximums (null = unlimited)
+  maxRam          Int?
+  maxDisk         Int?
+  maxCpu          Int?
+  
+  // Pterodactyl config
+  dockerImage     String
+  startup         String
+  environment     String    @default("{}")
+  
+  // Feature limits
+  databases       Int       @default(1)
+  backups         Int       @default(1)
+  allocations     Int       @default(1)
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  servers         Server[]
+  
+  @@unique([pterodactylId, nestId])
+}
+
+// ============================================================================
+// COUPON MODEL
+// ============================================================================
+
+model Coupon {
+  id            String      @id @default(uuid())
+  code          String      @unique
+  enabled       Boolean     @default(true)
+  
+  // Resources given
+  coins         Int         @default(0)
+  ram           Int         @default(0)
+  disk          Int         @default(0)
+  cpu           Int         @default(0)
+  servers       Int         @default(0)
+  databases     Int         @default(0)
+  backups       Int         @default(0)
+  allocations   Int         @default(0)
+  
+  // Usage limits
+  maxUses       Int?
+  usesCount     Int         @default(0)
+  
+  // Expiration
+  expiresAt     DateTime?
+  
+  // Timestamps
+  createdAt     DateTime    @default(now())
+  
+  // Relations
+  uses          CouponUse[]
+  
+  @@index([code])
+}
+
+model CouponUse {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  usedAt    DateTime @default(now())
+  
+  @@unique([userId, couponId])
+}
+
+// ============================================================================
+// TRANSACTION MODEL
+// ============================================================================
+
+model Transaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        String   // PURCHASE, COUPON, AFK, ADMIN_GRANT, etc.
+  amount      Int      // Positive or negative
+  description String?
+  metadata    String?  // JSON string for extra data
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([type])
+}
+
+// ============================================================================
+// SESSION MODEL
+// ============================================================================
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  token     String   @unique
+  expiresAt DateTime
+  
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([token])
+  @@index([userId])
+}
+
+// ============================================================================
+// AUDIT LOG MODEL
+// ============================================================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  
+  userId      String?
+  action      String
+  details     String?
+  ipAddress   String?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+}
+
+// ============================================================================
+// EARN TOKEN MODEL (for one-time Cuty.io links)
+// ============================================================================
+
+model EarnToken {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  userId      String
+  coins       Int
+  claimed     Boolean  @default(false)
+  expiresAt   DateTime
+  
+  createdAt   DateTime @default(now())
+  claimedAt   DateTime?
+  
+  @@index([token])
+  @@index([userId])
+}
