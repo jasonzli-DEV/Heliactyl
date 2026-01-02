@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Loader2, Save, ExternalLink, Download, RefreshCw, CheckCircle, AlertCircle, Link as LinkIcon, Plus, Trash2 } from 'lucide-react';
-
-interface EarnLink {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  coins: number;
-  cooldown: number; // in seconds
-}
+import { Settings, Loader2, Save, ExternalLink, Download, RefreshCw, CheckCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
 
 interface SettingsData {
   siteName: string;
@@ -36,7 +27,8 @@ interface SettingsData {
   defaultBackups: number;
   defaultAllocations: number;
   earnEnabled: boolean;
-  earnLinks: string; // JSON string of EarnLink[]
+  earnCoins: number;
+  earnCooldown: number;
   cutyApiToken: string | null;
 }
 
@@ -60,9 +52,6 @@ export default function AdminSettings() {
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [updateResult, setUpdateResult] = useState<{ success: boolean; message: string } | null>(null);
-  
-  // Earn links state
-  const [earnLinks, setEarnLinks] = useState<EarnLink[]>([]);
 
   useEffect(() => {
     fetchSettings();
@@ -74,15 +63,6 @@ export default function AdminSettings() {
       const res = await fetch('/api/settings/full', { credentials: 'include' });
       const data = await res.json();
       setSettings(data.settings);
-      
-      // Parse earn links
-      if (data.settings.earnLinks) {
-        try {
-          setEarnLinks(JSON.parse(data.settings.earnLinks));
-        } catch {
-          setEarnLinks([]);
-        }
-      }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
     } finally {
@@ -130,28 +110,6 @@ export default function AdminSettings() {
     }
   };
 
-  const addEarnLink = () => {
-    const newLink: EarnLink = {
-      id: Date.now().toString(),
-      title: '',
-      description: '',
-      url: '',
-      coins: 1,
-      cooldown: 3600,
-    };
-    setEarnLinks([...earnLinks, newLink]);
-  };
-
-  const updateEarnLink = (id: string, field: keyof EarnLink, value: string | number) => {
-    setEarnLinks(earnLinks.map(link => 
-      link.id === id ? { ...link, [field]: value } : link
-    ));
-  };
-
-  const removeEarnLink = (id: string) => {
-    setEarnLinks(earnLinks.filter(link => link.id !== id));
-  };
-
   const saveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -182,7 +140,8 @@ export default function AdminSettings() {
       defaultBackups: parseInt(fd.get('defaultBackups') as string) || 0,
       defaultAllocations: parseInt(fd.get('defaultAllocations') as string) || 0,
       earnEnabled: fd.get('earnEnabled') === 'on',
-      earnLinks: JSON.stringify(earnLinks),
+      earnCoins: parseInt(fd.get('earnCoins') as string) || 10,
+      earnCooldown: parseInt(fd.get('earnCooldown') as string) || 300,
     };
 
     // Only include secrets if they were changed (not masked)
@@ -452,23 +411,48 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* Earn Links Settings */}
+        {/* Earn Coins Settings */}
         <div className="card p-6">
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <LinkIcon className="w-5 h-5" />
-            Earn Coins (Cuty.io Quick Links)
+            Earn Coins (Cuty.io)
           </h2>
           <p className="text-sm text-gray-400 mb-4">
-            Users earn coins by completing links through Cuty.io. Each link generates a unique one-time URL.
+            Users click a button to generate a Cuty.io link. After completing the link, they get redirected back and receive coins automatically.
           </p>
           
-          <label className="flex items-center gap-2 mb-4">
+          <label className="flex items-center gap-2 mb-6">
             <input type="checkbox" name="earnEnabled" defaultChecked={settings?.earnEnabled ?? true} className="rounded" />
             <span className="text-sm text-gray-300">Enable Earn Page</span>
           </label>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="label">Coins Per Earn</label>
+              <input 
+                type="number" 
+                name="earnCoins" 
+                defaultValue={settings?.earnCoins || 10} 
+                className="input" 
+                min="1"
+              />
+              <p className="text-xs text-gray-500 mt-1">How many coins users get each time they complete a link</p>
+            </div>
+            <div>
+              <label className="label">Cooldown (seconds)</label>
+              <input 
+                type="number" 
+                name="earnCooldown" 
+                defaultValue={settings?.earnCooldown || 300} 
+                className="input" 
+                min="60"
+              />
+              <p className="text-xs text-gray-500 mt-1">Time between earns (300 = 5 minutes)</p>
+            </div>
+          </div>
+
           {/* Cuty.io API Token */}
-          <div className="mb-4 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
+          <div className="p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
             <label className="label">Cuty.io API Token</label>
             <input 
               type="password" 
@@ -479,86 +463,8 @@ export default function AdminSettings() {
             />
             <p className="text-xs text-gray-500 mt-2">
               Get your API token from <a href="https://cuty.io/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">cuty.io/dashboard</a>. 
-              Leave empty to use direct links without Cuty.io.
+              This is required for the earn feature to work.
             </p>
-          </div>
-
-          <div className="space-y-4">
-            {earnLinks.map((link, index) => (
-              <div key={link.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-300">Link #{index + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeEarnLink(link.id)}
-                    className="p-1 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="label text-xs">Title</label>
-                    <input
-                      type="text"
-                      value={link.title}
-                      onChange={(e) => updateEarnLink(link.id, 'title', e.target.value)}
-                      className="input"
-                      placeholder="e.g., Visit Cuty.io"
-                    />
-                  </div>
-                  <div>
-                    <label className="label text-xs">URL</label>
-                    <input
-                      type="url"
-                      value={link.url}
-                      onChange={(e) => updateEarnLink(link.id, 'url', e.target.value)}
-                      className="input"
-                      placeholder="https://cuty.io/yourlink"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="label text-xs">Description</label>
-                    <input
-                      type="text"
-                      value={link.description}
-                      onChange={(e) => updateEarnLink(link.id, 'description', e.target.value)}
-                      className="input"
-                      placeholder="Visit this link to earn coins"
-                    />
-                  </div>
-                  <div>
-                    <label className="label text-xs">Coins Reward</label>
-                    <input
-                      type="number"
-                      value={link.coins}
-                      onChange={(e) => updateEarnLink(link.id, 'coins', parseInt(e.target.value) || 0)}
-                      className="input"
-                      min="1"
-                    />
-                  </div>
-                  <div>
-                    <label className="label text-xs">Cooldown (seconds)</label>
-                    <input
-                      type="number"
-                      value={link.cooldown}
-                      onChange={(e) => updateEarnLink(link.id, 'cooldown', parseInt(e.target.value) || 60)}
-                      className="input"
-                      min="60"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            <button
-              type="button"
-              onClick={addEarnLink}
-              className="w-full p-3 border-2 border-dashed border-gray-700 rounded-lg text-gray-400 hover:text-white hover:border-gray-500 transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Earn Link
-            </button>
           </div>
         </div>
 

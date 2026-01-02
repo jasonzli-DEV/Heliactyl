@@ -6,85 +6,80 @@ import { randomBytes } from 'crypto';
 
 const router = Router();
 
-// Generate unique token
-function generateToken(): string {
-  return randomBytes(32).toString('hex');
+// Generate a short random token (8 chars)
+function generateShortToken(): string {
+  return randomBytes(4).toString('hex').toUpperCase();
 }
 
-// GET /api/earn/links - Get earn links for user (with Cuty.io quick links)
-router.get('/links', requireAuth, asyncHandler(async (req: AuthRequest, res) => {
+// POST /api/earn/generate - Generate a new earn link for the user
+router.post('/generate', requireAuth, asyncHandler(async (req: AuthRequest, res) => {
   const settings = await prisma.settings.findFirst();
   
   if (!settings?.earnEnabled) {
-    return res.json({ links: [], enabled: false });
+    throw createError('Earning is currently disabled', 400);
   }
 
-  // Parse earn links from settings
-  let links: Array<{
-    id: string;
-    title: string;
-    description: string;
-    coins: number;
-    cooldown: number;
-  }> = [];
+  if (!settings.cutyApiToken) {
+    throw createError('Cuty.io is not configured', 400);
+  }
 
-  if (settings.earnLinks) {
-    try {
-      links = JSON.parse(settings.earnLinks);
-    } catch {
-      links = [];
+  const earnCoins = settings.earnCoins || 10;
+  const earnCooldown = settings.earnCooldown || 300; // 5 minutes default
+
+  // Check cooldown - find user's last completed earn
+  const lastEarn = await prisma.earnToken.findFirst({
+    where: {
+      userId: req.user!.id,
+      claimed: true,
+    },
+    orderBy: { claimedAt: 'desc' },
+  });
+
+  if (lastEarn?.claimedAt) {
+    const cooldownMs = earnCooldown * 1000;
+    const timeSinceLast = Date.now() - lastEarn.claimedAt.getTime();
+    
+    if (timeSinceLast < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - timeSinceLast) / 1000);
+      throw createError(`Please wait ${remainingSeconds} seconds before earning again`, 429);
     }
   }
 
-  // For each link, generate a Cuty.io quick link if API token is configured
-  const cutyToken = settings.cutyApiToken;
-  const linksWithUrls = await Promise.all(links.map(async (link) => {
-    // Create a one-time earn token
-    const earnToken = await prisma.earnToken.create({
-      data: {
-        token: generateToken(),
-        userId: req.user!.id,
-        coins: link.coins,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-      },
-    });
+  // Generate a short token for the callback URL
+  const token = generateShortToken();
 
-    // Build callback URL
-    const siteUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
-    const callbackUrl = `${siteUrl}/api/earn/callback?token=${earnToken.token}`;
+  // Create the earn token in database
+  await prisma.earnToken.create({
+    data: {
+      token,
+      userId: req.user!.id,
+      coins: earnCoins,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour expiry
+    },
+  });
 
-    // If Cuty.io is configured, create quick link
-    let url: string;
-    if (cutyToken) {
-      url = `https://cuty.io/quick?token=${cutyToken}&url=${encodeURIComponent(callbackUrl)}`;
-    } else {
-      // Direct link without Cuty.io
-      url = callbackUrl;
-    }
+  // Build the callback URL (the secret endpoint)
+  const siteUrl = settings.siteUrl || `${req.protocol}://${req.get('host')}`;
+  const callbackUrl = `${siteUrl}/api/earn/callback/${token}`;
 
-    return {
-      ...link,
-      url,
-      earnToken: earnToken.token,
-    };
-  }));
+  // Build the Cuty.io quick link
+  const cutyUrl = `https://cuty.io/quick?token=${settings.cutyApiToken}&url=${encodeURIComponent(callbackUrl)}`;
 
   res.json({
-    links: linksWithUrls,
-    enabled: true,
-    hasCuty: !!cutyToken,
+    url: cutyUrl,
+    coins: earnCoins,
   });
 }));
 
-// GET /api/earn/callback - Callback for completing earn link
-router.get('/callback', asyncHandler(async (req, res) => {
-  const { token } = req.query;
+// GET /api/earn/callback/:token - Callback endpoint when user completes Cuty.io link
+router.get('/callback/:token', asyncHandler(async (req, res) => {
+  const { token } = req.params;
 
-  if (!token || typeof token !== 'string') {
+  if (!token || token.length !== 8) {
     return res.redirect('/?error=invalid_token');
   }
 
-  // Find earn token
+  // Find the earn token
   const earnToken = await prisma.earnToken.findUnique({
     where: { token },
   });
@@ -98,10 +93,12 @@ router.get('/callback', asyncHandler(async (req, res) => {
   }
 
   if (earnToken.expiresAt < new Date()) {
+    // Delete expired token
+    await prisma.earnToken.delete({ where: { id: earnToken.id } });
     return res.redirect('/?error=token_expired');
   }
 
-  // Mark as claimed and give coins
+  // Award the coins!
   await prisma.$transaction([
     prisma.earnToken.update({
       where: { id: earnToken.id },
@@ -121,85 +118,65 @@ router.get('/callback', asyncHandler(async (req, res) => {
         userId: earnToken.userId,
         type: 'EARN',
         amount: earnToken.coins,
-        description: 'Earned from link completion',
+        description: 'Completed Cuty.io link',
       },
     }),
     prisma.auditLog.create({
       data: {
         userId: earnToken.userId,
-        action: 'EARN_LINK_COMPLETED',
-        details: JSON.stringify({ coins: earnToken.coins, tokenId: earnToken.id }),
+        action: 'EARN_COMPLETED',
+        details: JSON.stringify({ coins: earnToken.coins }),
         ipAddress: req.ip || 'unknown',
       },
     }),
   ]);
 
-  // Redirect to success page
+  // Redirect to earn page with success
   res.redirect(`/earn?success=true&coins=${earnToken.coins}`);
 }));
 
-// POST /api/earn/claim - Manual claim (for direct links without Cuty.io)
-router.post('/claim', requireAuth, asyncHandler(async (req: AuthRequest, res) => {
-  const { token } = req.body;
+// GET /api/earn/status - Get earn status for user
+router.get('/status', requireAuth, asyncHandler(async (req: AuthRequest, res) => {
+  const settings = await prisma.settings.findFirst();
+  
+  const earnEnabled = settings?.earnEnabled ?? false;
+  const earnCoins = settings?.earnCoins || 10;
+  const earnCooldown = settings?.earnCooldown || 300;
+  const configured = !!settings?.cutyApiToken;
 
-  if (!token) {
-    throw createError('Token is required', 400);
-  }
+  // Check cooldown
+  let canEarn = true;
+  let cooldownRemaining = 0;
 
-  const earnToken = await prisma.earnToken.findUnique({
-    where: { token },
+  const lastEarn = await prisma.earnToken.findFirst({
+    where: {
+      userId: req.user!.id,
+      claimed: true,
+    },
+    orderBy: { claimedAt: 'desc' },
   });
 
-  if (!earnToken) {
-    throw createError('Token not found', 404);
+  if (lastEarn?.claimedAt) {
+    const cooldownMs = earnCooldown * 1000;
+    const timeSinceLast = Date.now() - lastEarn.claimedAt.getTime();
+    
+    if (timeSinceLast < cooldownMs) {
+      canEarn = false;
+      cooldownRemaining = Math.ceil((cooldownMs - timeSinceLast) / 1000);
+    }
   }
-
-  if (earnToken.userId !== req.user!.id) {
-    throw createError('Invalid token', 403);
-  }
-
-  if (earnToken.claimed) {
-    throw createError('Already claimed', 400);
-  }
-
-  if (earnToken.expiresAt < new Date()) {
-    throw createError('Token expired', 400);
-  }
-
-  // Claim the tokens
-  await prisma.$transaction([
-    prisma.earnToken.update({
-      where: { id: earnToken.id },
-      data: {
-        claimed: true,
-        claimedAt: new Date(),
-      },
-    }),
-    prisma.user.update({
-      where: { id: earnToken.userId },
-      data: {
-        coins: { increment: earnToken.coins },
-      },
-    }),
-    prisma.transaction.create({
-      data: {
-        userId: earnToken.userId,
-        type: 'EARN',
-        amount: earnToken.coins,
-        description: 'Earned from link completion',
-      },
-    }),
-  ]);
 
   res.json({
-    success: true,
-    coins: earnToken.coins,
+    enabled: earnEnabled && configured,
+    coins: earnCoins,
+    cooldown: earnCooldown,
+    canEarn,
+    cooldownRemaining,
   });
 }));
 
-// Cleanup expired tokens (can be called periodically)
+// Cleanup: Delete expired unclaimed tokens
 router.delete('/cleanup', requireAuth, asyncHandler(async (req: AuthRequest, res) => {
-  // Only allow admins to cleanup
   if (!req.user!.isAdmin) {
     throw createError('Admin access required', 403);
   }
@@ -207,16 +184,13 @@ router.delete('/cleanup', requireAuth, asyncHandler(async (req: AuthRequest, res
   const result = await prisma.earnToken.deleteMany({
     where: {
       OR: [
-        { expiresAt: { lt: new Date() } },
-        { claimed: true, claimedAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }, // Claimed over 7 days ago
+        { expiresAt: { lt: new Date() }, claimed: false },
+        { claimed: true, claimedAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
       ],
     },
   });
 
-  res.json({
-    success: true,
-    deleted: result.count,
-  });
+  res.json({ deleted: result.count });
 }));
 
 export default router;

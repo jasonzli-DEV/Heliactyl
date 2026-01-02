@@ -161,7 +161,8 @@ model Settings {
   
   // Earn settings (Cuty.io style link earning)
   earnEnabled           Boolean  @default(true)
-  earnLinks             String?  // JSON array of earn links
+  earnCoins             Int      @default(10)    // Coins per earn
+  earnCooldown          Int      @default(300)   // Cooldown in seconds (5 min default)
   cutyApiToken          String?  // Cuty.io API token for quick links
   
   // Store settings

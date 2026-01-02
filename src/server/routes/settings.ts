@@ -48,7 +48,8 @@ router.get('/public', asyncHandler(async (req, res) => {
     afkInterval: settings.afkInterval,
     storeEnabled: settings.storeEnabled,
     earnEnabled: settings.earnEnabled,
-    earnLinks: settings.earnLinks,
+    earnCoins: settings.earnCoins,
+    earnCooldown: settings.earnCooldown,
   });
 }));
 

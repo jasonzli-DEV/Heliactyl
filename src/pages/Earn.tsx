@@ -1,27 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ExternalLink, Coins, Gift, Link2, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Coins, Gift, CheckCircle, AlertCircle, Loader2, Clock, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-interface EarnLink {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
+interface EarnStatus {
+  enabled: boolean;
   coins: number;
   cooldown: number;
-  earnToken: string;
+  canEarn: boolean;
+  cooldownRemaining: number;
 }
 
 export default function Earn() {
   const { user, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
-  const [links, setLinks] = useState<EarnLink[]>([]);
+  const [status, setStatus] = useState<EarnStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasCuty, setHasCuty] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [visitedLinks, setVisitedLinks] = useState<Set<string>>(new Set());
-  const [claiming, setClaiming] = useState<string | null>(null);
+  const [cooldownTimer, setCooldownTimer] = useState(0);
 
   // Check for success from callback
   useEffect(() => {
@@ -30,14 +27,14 @@ export default function Earn() {
     const error = searchParams.get('error');
 
     if (success === 'true' && coins) {
-      setMessage({ type: 'success', text: `Congratulations! You earned ${coins} coins!` });
+      setMessage({ type: 'success', text: `🎉 Congratulations! You earned ${coins} coins!` });
       refreshUser();
-      // Clear URL params
+      loadStatus(); // Refresh status to get new cooldown
       window.history.replaceState({}, '', '/earn');
     } else if (error) {
       const errorMessages: Record<string, string> = {
-        invalid_token: 'Invalid earn token',
-        token_not_found: 'Token not found',
+        invalid_token: 'Invalid earn link',
+        token_not_found: 'Link not found or expired',
         already_claimed: 'This reward has already been claimed',
         token_expired: 'This earn link has expired',
       };
@@ -46,64 +43,76 @@ export default function Earn() {
     }
   }, [searchParams, refreshUser]);
 
-  const loadEarnLinks = async () => {
-    setLoading(true);
+  const loadStatus = async () => {
     try {
-      const res = await fetch('/api/earn/links', { credentials: 'include' });
+      const res = await fetch('/api/earn/status', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setLinks(data.links || []);
-        setHasCuty(data.hasCuty || false);
+        setStatus(data);
+        setCooldownTimer(data.cooldownRemaining || 0);
       }
     } catch (err) {
-      console.error('Failed to load earn links:', err);
+      console.error('Failed to load earn status:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadEarnLinks();
+    loadStatus();
   }, []);
 
-  const openLink = (link: EarnLink) => {
-    window.open(link.url, '_blank');
-    setVisitedLinks(prev => new Set(prev).add(link.id));
-  };
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (cooldownTimer <= 0) return;
 
-  // Direct claim (for non-Cuty.io links)
-  const claimReward = async (link: EarnLink) => {
-    setClaiming(link.id);
+    const interval = setInterval(() => {
+      setCooldownTimer(prev => {
+        if (prev <= 1) {
+          loadStatus(); // Refresh when cooldown ends
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [cooldownTimer]);
+
+  const generateLink = async () => {
+    setGenerating(true);
     setMessage(null);
 
     try {
-      const res = await fetch('/api/earn/claim', {
+      const res = await fetch('/api/earn/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ token: link.earnToken }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setMessage({ type: 'success', text: `Earned ${data.coins} coins!` });
-        refreshUser();
-        // Reload links to get fresh tokens
-        loadEarnLinks();
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        // Redirect user to Cuty.io link
+        window.location.href = data.url;
       } else {
-        const data = await res.json();
-        setMessage({ type: 'error', text: data.error || 'Failed to claim reward' });
+        setMessage({ type: 'error', text: data.error || 'Failed to generate earn link' });
+        setGenerating(false);
       }
     } catch {
-      setMessage({ type: 'error', text: 'Failed to claim reward' });
-    } finally {
-      setClaiming(null);
+      setMessage({ type: 'error', text: 'Failed to generate earn link' });
+      setGenerating(false);
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="p-6 lg:p-8 max-w-2xl mx-auto">
         <div className="card p-8 text-center">
           <Loader2 className="w-6 h-6 animate-spin mx-auto text-accent-500" />
         </div>
@@ -111,33 +120,36 @@ export default function Earn() {
     );
   }
 
+  if (!status?.enabled) {
+    return (
+      <div className="p-6 lg:p-8 max-w-2xl mx-auto animate-fadeIn">
+        <div className="card p-8 text-center">
+          <Gift className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">Earning Disabled</h2>
+          <p className="text-gray-400">Earning coins is currently not available. Check back later!</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 lg:p-8 max-w-4xl mx-auto animate-fadeIn">
+    <div className="p-6 lg:p-8 max-w-2xl mx-auto animate-fadeIn">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-white mb-2">Earn Coins</h1>
-        <p className="text-gray-400">
-          {hasCuty
-            ? 'Complete links through Cuty.io to earn coins! Each link can only be used once.'
-            : 'Visit links to earn coins! Click a link, then claim your reward.'}
-        </p>
+        <p className="text-gray-400">Complete a short link to earn free coins!</p>
       </div>
 
-      {/* Stats Card */}
+      {/* Balance Card */}
       <div className="card p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-              <Coins className="w-6 h-6 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-400">Your Balance</p>
-              <p className="text-2xl font-bold text-white">{user?.coins?.toLocaleString() || 0} coins</p>
-            </div>
+        <div className="flex items-center justify-center gap-4">
+          <div className="w-14 h-14 rounded-xl bg-amber-500/20 flex items-center justify-center">
+            <Coins className="w-7 h-7 text-amber-400" />
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-400">Available Links</p>
-            <p className="text-2xl font-bold text-white">{links.length}</p>
+          <div className="text-center">
+            <p className="text-sm text-gray-400">Your Balance</p>
+            <p className="text-3xl font-bold text-white">{user?.coins?.toLocaleString() || 0}</p>
+            <p className="text-xs text-gray-500">coins</p>
           </div>
         </div>
       </div>
@@ -145,116 +157,70 @@ export default function Earn() {
       {/* Message */}
       {message && (
         <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 animate-fadeIn ${
-          message.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+          message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'
         }`}>
           {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5" />
+            <CheckCircle className="w-5 h-5 flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5" />
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
           )}
           {message.text}
         </div>
       )}
 
-      {/* Earn Links */}
-      {links.length === 0 ? (
-        <div className="card p-8 text-center">
-          <Gift className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-400 mb-2">No Earn Links Available</h3>
-          <p className="text-gray-500">Check back later for ways to earn coins!</p>
+      {/* Main Earn Card */}
+      <div className="card p-8 text-center">
+        <div className="w-20 h-20 rounded-full bg-accent-500/20 flex items-center justify-center mx-auto mb-6">
+          <Gift className="w-10 h-10 text-accent-400" />
         </div>
-      ) : (
-        <div className="grid gap-4">
-          {links.map((link) => {
-            const visited = visitedLinks.has(link.id);
 
-            return (
-              <div key={link.id} className="card p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Link2 className="w-4 h-4 text-accent-400" />
-                      <h3 className="font-semibold text-white">{link.title}</h3>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">{link.description}</p>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="flex items-center gap-1 text-amber-400">
-                        <Coins className="w-4 h-4" />
-                        {link.coins} coins
-                      </span>
-                      {hasCuty && (
-                        <span className="flex items-center gap-1 text-blue-400">
-                          <CheckCircle className="w-4 h-4" />
-                          One-time use
-                        </span>
-                      )}
-                    </div>
-                  </div>
+        <h2 className="text-xl font-semibold text-white mb-2">
+          Earn {status.coins} Coins
+        </h2>
+        <p className="text-gray-400 mb-6">
+          Click the button below to start. You'll be redirected to complete a short link, then automatically return here with your coins!
+        </p>
 
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => openLink(link)}
-                      className="btn-primary text-sm"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      {hasCuty ? 'Complete Link' : 'Visit Link'}
-                    </button>
-                    
-                    {/* Show claim button only for non-Cuty.io setup */}
-                    {!hasCuty && (
-                      <button
-                        onClick={() => claimReward(link)}
-                        disabled={!visited || claiming === link.id}
-                        className={`btn-secondary text-sm ${!visited ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        {claiming === link.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Gift className="w-4 h-4" />
-                            {visited ? 'Claim Reward' : 'Visit First'}
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Info */}
-      <div className="mt-8 card p-6 bg-dark-800/50">
-        <h3 className="font-semibold text-white mb-2">How it works</h3>
-        {hasCuty ? (
-          <ol className="list-decimal list-inside space-y-2 text-sm text-gray-400">
-            <li>Click "Complete Link" to open the Cuty.io shortened link</li>
-            <li>Complete the link (pass through the shortener page)</li>
-            <li>You'll be automatically redirected back and receive your coins</li>
-            <li>Each link can only be used once - refresh the page for new links</li>
-          </ol>
+        {cooldownTimer > 0 ? (
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400">
+              <Clock className="w-5 h-5" />
+              <span className="font-mono text-lg">{formatTime(cooldownTimer)}</span>
+            </div>
+            <p className="text-sm text-gray-500">Wait for the cooldown to earn again</p>
+          </div>
         ) : (
-          <ol className="list-decimal list-inside space-y-2 text-sm text-gray-400">
-            <li>Click "Visit Link" to open the earning link in a new tab</li>
-            <li>Complete any required actions on the page</li>
-            <li>Return here and click "Claim Reward" to receive your coins</li>
-            <li>Each link can only be claimed once per session</li>
-          </ol>
+          <button
+            onClick={generateLink}
+            disabled={generating}
+            className="btn-primary text-lg px-8 py-3"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <ExternalLink className="w-5 h-5" />
+                Earn Coins Now
+              </>
+            )}
+          </button>
         )}
       </div>
 
-      {/* Refresh button */}
-      <div className="mt-4 text-center">
-        <button
-          onClick={loadEarnLinks}
-          className="btn-secondary"
-        >
-          <Gift className="w-4 h-4" />
-          Load New Links
-        </button>
+      {/* How it works */}
+      <div className="mt-6 card p-6 bg-dark-800/50">
+        <h3 className="font-semibold text-white mb-3">How it works</h3>
+        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-400">
+          <li>Click "Earn Coins Now" to start</li>
+          <li>Complete the short link (takes ~10 seconds)</li>
+          <li>You'll be automatically redirected back with your coins!</li>
+          <li>Wait {Math.floor(status.cooldown / 60)} minutes between each earn</li>
+        </ol>
       </div>
     </div>
   );
 }
+
