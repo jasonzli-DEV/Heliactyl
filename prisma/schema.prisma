@@ -59,6 +59,7 @@ model User {
   transactions         Transaction[]
   sessions             Session[]
   tickets              Ticket[]
+  ticketMessages       TicketMessage[]
   
   @@index([discordId])
 }
@@ -439,10 +440,12 @@ model TicketMessage {
   ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   
   userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   isStaff     Boolean  @default(false)
   message     String
   
   createdAt   DateTime @default(now())
   
   @@index([ticketId])
+  @@index([userId])
 }

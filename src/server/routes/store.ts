@@ -107,7 +107,7 @@ router.get('/locations', asyncHandler(async (_req, res) => {
     locations.map(async (loc) => {
       try {
         // Check if location has capacity via Pterodactyl API
-        const nodes = await pterodactyl.getNodes();
+        const nodes = await pterodactyl.getNodes() as any[];
         const locationNodes = nodes.filter((n: any) => n.attributes.location_id === loc.pterodactylId);
         
         const hasCapacity = locationNodes.some((node: any) => {
