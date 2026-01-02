@@ -38,7 +38,9 @@ export default function AdminServers() {
       const res = await fetch(`/api/admin/servers?page=${pagination.page}`, { credentials: 'include' });
       const data = await res.json();
       setServers(data.servers || []);
-      setPagination(data.pagination);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (error) {
       console.error('Failed to fetch servers:', error);
     } finally {

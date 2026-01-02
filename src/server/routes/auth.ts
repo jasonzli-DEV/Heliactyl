@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/database';
 import { generateToken, requireAuth, type AuthRequest } from '../middleware/auth';
 import { asyncHandler, createError } from '../middleware/error';
-import { createPteroUserWithPassword } from '../lib/pterodactyl';
+import { createPteroUserWithPassword, findPteroUserByEmail } from '../lib/pterodactyl';
 
 const router = Router();
 
@@ -86,14 +86,25 @@ router.get('/callback', asyncHandler(async (req, res) => {
     // Check if this is the admin Discord ID
     const isAdmin = discordUser.id === settings.adminDiscordId;
 
-    // Create Pterodactyl account for new user
+    // Try to link existing Pterodactyl account or create new one
     let pterodactylId: number | null = null;
     
     try {
-      const { userId } = await createPteroUserWithPassword(discordUser.email, discordUser.username);
-      pterodactylId = userId;
+      // First check if a Pterodactyl account with this email already exists
+      const existingPteroUser = await findPteroUserByEmail(discordUser.email);
+      
+      if (existingPteroUser) {
+        // Link to existing account
+        pterodactylId = existingPteroUser.id;
+        console.log(`Linked existing Pterodactyl account ${existingPteroUser.id} for ${discordUser.email}`);
+      } else {
+        // Create new Pterodactyl account
+        const { userId } = await createPteroUserWithPassword(discordUser.email, discordUser.username);
+        pterodactylId = userId;
+        console.log(`Created new Pterodactyl account ${userId} for ${discordUser.email}`);
+      }
     } catch (error) {
-      console.error('Failed to create Pterodactyl account:', error);
+      console.error('Failed to create/link Pterodactyl account:', error);
       // Continue without Pterodactyl account - can be set up later
     }
 

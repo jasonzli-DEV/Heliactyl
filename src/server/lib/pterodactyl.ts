@@ -133,6 +133,81 @@ export async function getNodes() {
   return pteroRequest('/nodes');
 }
 
+// Get nodes with their usage info
+export async function getNodesWithUsage(): Promise<Array<{
+  id: number;
+  name: string;
+  locationId: number;
+  memory: number;
+  memoryOverallocate: number;
+  disk: number;
+  diskOverallocate: number;
+  usedMemory: number;
+  usedDisk: number;
+  availableMemory: number;
+  availableDisk: number;
+}>> {
+  const response = await pteroRequest('/nodes?include=servers') as {
+    data: Array<{
+      attributes: {
+        id: number;
+        name: string;
+        location_id: number;
+        memory: number;
+        memory_overallocate: number;
+        disk: number;
+        disk_overallocate: number;
+        allocated_resources: {
+          memory: number;
+          disk: number;
+        };
+      };
+    }>;
+  };
+  
+  return response.data.map(node => {
+    const attrs = node.attributes;
+    const maxMemory = attrs.memory * (1 + attrs.memory_overallocate / 100);
+    const maxDisk = attrs.disk * (1 + attrs.disk_overallocate / 100);
+    const usedMemory = attrs.allocated_resources?.memory || 0;
+    const usedDisk = attrs.allocated_resources?.disk || 0;
+    
+    return {
+      id: attrs.id,
+      name: attrs.name,
+      locationId: attrs.location_id,
+      memory: attrs.memory,
+      memoryOverallocate: attrs.memory_overallocate,
+      disk: attrs.disk,
+      diskOverallocate: attrs.disk_overallocate,
+      usedMemory,
+      usedDisk,
+      availableMemory: maxMemory - usedMemory,
+      availableDisk: maxDisk - usedDisk,
+    };
+  });
+}
+
+// Find best node for deployment based on location and required resources
+export async function findBestNode(locationId: number, requiredRam: number, requiredDisk: number): Promise<number | null> {
+  const nodes = await getNodesWithUsage();
+  
+  // Filter nodes by location and available capacity
+  const availableNodes = nodes.filter(node => 
+    node.locationId === locationId &&
+    node.availableMemory >= requiredRam &&
+    node.availableDisk >= requiredDisk
+  );
+  
+  if (availableNodes.length === 0) {
+    return null;
+  }
+  
+  // Return the node with most available memory (simple load balancing)
+  availableNodes.sort((a, b) => b.availableMemory - a.availableMemory);
+  return availableNodes[0].id;
+}
+
 // Nest/Egg management
 export async function getNests() {
   return pteroRequest('/nests');

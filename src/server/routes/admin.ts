@@ -34,17 +34,27 @@ router.get('/stats', asyncHandler(async (req: AuthRequest, res) => {
 
 // GET /api/admin/users
 router.get('/users', asyncHandler(async (req: AuthRequest, res) => {
-  const { page = '1', limit = '20' } = req.query;
+  const { page = '1', limit = '20', search = '' } = req.query;
   const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+  // Build search filter
+  const searchFilter = search ? {
+    OR: [
+      { username: { contains: search as string } },
+      { email: { contains: search as string } },
+      { discordId: { contains: search as string } },
+    ],
+  } : {};
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({
+      where: searchFilter,
       include: { _count: { select: { ownedServers: true } } },
       orderBy: { createdAt: 'desc' },
       skip,
       take: parseInt(limit as string),
     }),
-    prisma.user.count(),
+    prisma.user.count({ where: searchFilter }),
   ]);
 
   res.json({
@@ -94,11 +104,28 @@ router.delete('/users/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // GET /api/admin/servers
 router.get('/servers', asyncHandler(async (req: AuthRequest, res) => {
-  const servers = await prisma.server.findMany({
-    include: { user: { select: { id: true, username: true } }, location: true, egg: true },
-    orderBy: { createdAt: 'desc' },
+  const { page = '1', limit = '20' } = req.query;
+  const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+  
+  const [servers, total] = await Promise.all([
+    prisma.server.findMany({
+      include: { user: { select: { id: true, username: true, discordId: true } }, location: true, egg: true },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: parseInt(limit as string),
+    }),
+    prisma.server.count(),
+  ]);
+  
+  res.json({
+    servers,
+    pagination: {
+      page: parseInt(page as string),
+      limit: parseInt(limit as string),
+      total,
+      pages: Math.ceil(total / parseInt(limit as string)),
+    },
   });
-  res.json({ servers });
 }));
 
 // Packages

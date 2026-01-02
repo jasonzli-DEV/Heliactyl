@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Users, Search, ChevronLeft, ChevronRight, Shield, Ban, Trash2, Loader2, Edit } from 'lucide-react';
 
 interface User {
@@ -32,12 +32,21 @@ export default function AdminUsers() {
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, pages: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     fetchUsers();
-  }, [pagination.page, search]);
+  }, [pagination.page, debouncedSearch]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -45,12 +54,14 @@ export default function AdminUsers() {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: '20',
-        ...(search && { search }),
+        ...(debouncedSearch && { search: debouncedSearch }),
       });
       const res = await fetch(`/api/admin/users?${params}`, { credentials: 'include' });
       const data = await res.json();
       setUsers(data.users || []);
-      setPagination(data.pagination);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (error) {
       console.error('Failed to fetch users:', error);
     } finally {
@@ -111,7 +122,7 @@ export default function AdminUsers() {
       {/* Search */}
       <div className="card p-4 mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
           <input
             type="text"
             value={search}
@@ -120,7 +131,7 @@ export default function AdminUsers() {
               setPagination((p) => ({ ...p, page: 1 }));
             }}
             placeholder="Search by username, email, or Discord ID..."
-            className="input pl-10"
+            className="input pl-10 w-full"
           />
         </div>
       </div>
