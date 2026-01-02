@@ -5,7 +5,7 @@
 set -e
 
 INSTALL_DIR="/var/www/heliactyl"
-GITHUB_REPO="https://github.com/jasonzli-DEV/Enderactyl.git"
+GITHUB_REPO="https://github.com/jasonzli-DEV/Heliactyl.git"
 BRANCH="main"
 
 # Colors
@@ -74,9 +74,9 @@ if [ -f ".env" ]; then
 fi
 
 # Enable maintenance mode (stop the service)
-if systemctl is-active --quiet enderactyl; then
-    log "Stopping Enderactyl service..."
-    systemctl stop enderactyl
+if systemctl is-active --quiet heliactyl; then
+    log "Stopping Heliactyl service..."
+    systemctl stop heliactyl
 fi
 
 # Pull latest changes
@@ -132,9 +132,9 @@ chmod 755 "$INSTALL_DIR/prisma"
 chmod 664 "$INSTALL_DIR/prisma/heliactyl.db" 2>/dev/null || true
 
 # Restart service
-if systemctl is-enabled --quiet enderactyl 2>/dev/null; then
-    log "Restarting Enderactyl service..."
-    systemctl start enderactyl
+if systemctl is-enabled --quiet heliactyl 2>/dev/null; then
+    log "Restarting Heliactyl service..."
+    systemctl start heliactyl
 fi
 
 # Get new version

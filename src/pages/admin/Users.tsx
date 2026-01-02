@@ -272,7 +272,7 @@ export default function AdminUsers() {
                 
                 // Calculate ban expiration date
                 let banExpiresAt: string | null = null;
-                if (banned && banDuration) {
+                if (banned && banDuration && banDuration !== '') {
                   const now = new Date();
                   const match = banDuration.match(/^(\d+)(h|d)$/);
                   if (match) {
@@ -285,6 +285,10 @@ export default function AdminUsers() {
                     }
                     banExpiresAt = now.toISOString();
                   }
+                }
+                // If unbanning or setting permanent ban, explicitly set to null
+                if (!banned || !banDuration || banDuration === '') {
+                  banExpiresAt = null;
                 }
                 
                 updateUser(editingUser.id, {
