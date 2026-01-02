@@ -1,0 +1,64 @@
+{
+  "releases": {
+    "1.0.1": {
+      "version": "1.0.1",
+      "date": "2026-01-02",
+      "description": "Maintenance mode and improved installation",
+      "commands": [
+        {
+          "type": "migration",
+          "command": "npx prisma generate && npx prisma db push",
+          "description": "Update database schema"
+        },
+        {
+          "type": "build",
+          "command": "npm run build",
+          "description": "Rebuild frontend with new maintenance page"
+        }
+      ],
+      "breaking": false,
+      "notes": [
+        "Added maintenance mode functionality",
+        "Created comprehensive installation guide (INSTALL.md)",
+        "Updated README with proper documentation links"
+      ]
+    },
+    "1.0.0": {
+      "version": "1.0.0",
+      "date": "2026-01-01",
+      "description": "Initial release",
+      "commands": [
+        {
+          "type": "migration",
+          "command": "npx prisma generate && npx prisma db push",
+          "description": "Initialize database"
+        },
+        {
+          "type": "build",
+          "command": "npm run build",
+          "description": "Build application"
+        }
+      ],
+      "breaking": false,
+      "notes": [
+        "Initial Heliactyl v13 release",
+        "Prepaid hourly billing system",
+        "Modern React + TypeScript frontend",
+        "Express + Prisma backend"
+      ]
+    }
+  },
+  "updateInstructions": {
+    "standard": [
+      "Stop service",
+      "Backup database",
+      "Pull latest code",
+      "Install dependencies",
+      "Run migrations",
+      "Build frontend",
+      "Restart service"
+    ],
+    "requiresRebuild": true,
+    "requiresMigration": true
+  }
+}

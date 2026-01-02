@@ -42,6 +42,7 @@ interface SettingsData {
 }
 
 interface VersionInfo {
+  version: string;
   currentCommit: string;
   remoteCommit: string;
   branch: string;
@@ -228,18 +229,22 @@ export default function AdminSettings() {
         
         <div className="space-y-4">
           {versionInfo && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="p-3 bg-dark-700/50 rounded-lg">
-                <span className="text-xs text-gray-400 block mb-1">Current Version</span>
+                <span className="text-xs text-gray-400 block mb-1">Version</span>
+                <code className="text-sm text-purple-400 font-mono">{versionInfo.version}</code>
+              </div>
+              <div className="p-3 bg-dark-700/50 rounded-lg">
+                <span className="text-xs text-gray-400 block mb-1">Current Commit</span>
                 <code className="text-sm text-blue-400 font-mono">{versionInfo.currentCommit}</code>
               </div>
               <div className="p-3 bg-dark-700/50 rounded-lg">
-                <span className="text-xs text-gray-400 block mb-1">Latest Version</span>
+                <span className="text-xs text-gray-400 block mb-1">Latest Commit</span>
                 <code className="text-sm text-green-400 font-mono">{versionInfo.remoteCommit}</code>
               </div>
               <div className="p-3 bg-dark-700/50 rounded-lg">
                 <span className="text-xs text-gray-400 block mb-1">Branch</span>
-                <code className="text-sm text-purple-400 font-mono">{versionInfo.branch}</code>
+                <code className="text-sm text-yellow-400 font-mono">{versionInfo.branch}</code>
               </div>
             </div>
           )}

@@ -15,16 +15,26 @@ router.use(requireAdmin);
 // GET /api/system/version - Get current version and check for updates
 router.get('/version', asyncHandler(async (req: AuthRequest, res) => {
   try {
+    // Get version from package.json
+    let currentVersion = 'unknown';
+    let packageJson: any = null;
+    try {
+      packageJson = require('../../../package.json');
+      currentVersion = packageJson.version;
+    } catch {
+      currentVersion = 'unknown';
+    }
+
     // Get current commit
-    let currentCommit = 'v13.1.2';
-    let remoteCommit = 'v13.1.2';
+    let currentCommit = currentVersion;
+    let remoteCommit = currentVersion;
     let branch = 'main';
     
     try {
       const result1 = await execAsync('git rev-parse HEAD', { cwd: process.cwd() });
       currentCommit = result1.stdout.trim().substring(0, 7);
     } catch {
-      // Use default
+      // Use version
     }
 
     // Fetch latest from remote (ignore errors)
@@ -68,6 +78,7 @@ router.get('/version', asyncHandler(async (req: AuthRequest, res) => {
     }
 
     res.json({
+      version: currentVersion,
       currentCommit,
       remoteCommit,
       branch,
@@ -77,8 +88,9 @@ router.get('/version', asyncHandler(async (req: AuthRequest, res) => {
   } catch (error: any) {
     // Git not initialized or other error - return sensible defaults
     res.json({
-      currentCommit: 'v13.1.2',
-      remoteCommit: 'v13.1.2',
+      version: 'unknown',
+      currentCommit: 'unknown',
+      remoteCommit: 'unknown',
       branch: 'main',
       updateAvailable: false,
       changelog: '',
@@ -116,8 +128,8 @@ router.post('/update', asyncHandler(async (req: AuthRequest, res) => {
     });
     steps.push(`Pulled latest: ${pullOutput.trim()}`);
 
-    // Step 3: Install dependencies
-    const { stdout: npmOutput } = await execAsync('npm ci', {
+    // Step 3: Install dependencies (use npm install to preserve optional deps)
+    const { stdout: npmOutput } = await execAsync('npm install --production=false', {
       cwd: process.cwd(),
       timeout: 120000, // 2 minute timeout
     });
@@ -128,15 +140,22 @@ router.post('/update', asyncHandler(async (req: AuthRequest, res) => {
     steps.push('Generated Prisma client');
 
     // Step 5: Run database migrations
-    await execAsync('npx prisma db push', { cwd: process.cwd() });
+    await execAsync('npx prisma db push --accept-data-loss', { cwd: process.cwd() });
     steps.push('Applied database migrations');
 
-    // Step 6: Build application
-    const { stdout: buildOutput } = await execAsync('npm run build', {
+    // Step 6: Build frontend (critical for UI changes)
+    const { stdout: buildClientOutput } = await execAsync('npm run build:client', {
       cwd: process.cwd(),
       timeout: 180000, // 3 minute timeout
     });
-    steps.push('Built application');
+    steps.push('Built frontend');
+
+    // Step 7: Build backend
+    const { stdout: buildServerOutput } = await execAsync('npm run build:server', {
+      cwd: process.cwd(),
+      timeout: 60000, // 1 minute timeout
+    });
+    steps.push('Built backend');
 
     // Log success
     await prisma.auditLog.create({
