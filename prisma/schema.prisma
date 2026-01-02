@@ -62,6 +62,7 @@ model User {
   tickets              Ticket[]
   ticketMessages       TicketMessage[]
   statusEarn           StatusEarn?
+  auditLogs            AuditLog[]
   
   @@index([discordId])
 }
@@ -402,6 +403,7 @@ model AuditLog {
   id          String   @id @default(uuid())
   
   userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   action      String
   details     String?
   ipAddress   String?

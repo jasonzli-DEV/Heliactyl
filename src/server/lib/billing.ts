@@ -230,6 +230,28 @@ export async function chargeUpfrontForServer(
   return { success: true, nextBillingAt: nextBilling };
 }
 
+// Clean up audit logs older than 30 days
+export async function cleanupAuditLogs() {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const result = await prisma.auditLog.deleteMany({
+      where: {
+        createdAt: {
+          lt: thirtyDaysAgo,
+        },
+      },
+    });
+    
+    if (result.count > 0) {
+      console.log(`[Cleanup] Deleted ${result.count} audit logs older than 30 days`);
+    }
+  } catch (error) {
+    console.error('[Cleanup] Failed to clean up audit logs:', error);
+  }
+}
+
 // Start billing interval (runs every hour)
 let billingInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -242,10 +264,12 @@ export function startBillingService() {
   
   // Run immediately on startup
   processBilling().catch(console.error);
+  cleanupAuditLogs().catch(console.error);
   
   // Then run every hour
   billingInterval = setInterval(() => {
     processBilling().catch(console.error);
+    cleanupAuditLogs().catch(console.error);
   }, 60 * 60 * 1000); // 1 hour
 }
 

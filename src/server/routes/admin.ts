@@ -337,7 +337,16 @@ router.get('/audit-logs', asyncHandler(async (req: AuthRequest, res) => {
   const { page = '1', limit = '50' } = req.query;
   const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
   const [logs, total] = await Promise.all([
-    prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, skip, take: parseInt(limit as string) }),
+    prisma.auditLog.findMany({ 
+      include: { 
+        user: { 
+          select: { id: true, username: true } 
+        } 
+      },
+      orderBy: { createdAt: 'desc' }, 
+      skip, 
+      take: parseInt(limit as string) 
+    }),
     prisma.auditLog.count(),
   ]);
   res.json({ logs, pagination: { page: parseInt(page as string), limit: parseInt(limit as string), total, pages: Math.ceil(total / parseInt(limit as string)) } });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Search, ChevronLeft, ChevronRight, Shield, Ban, Trash2, Loader2, Edit } from 'lucide-react';
+import { Users, Search, ChevronLeft, ChevronRight, Shield, Ban, Trash2, Loader2, Edit, Clock } from 'lucide-react';
 
 interface User {
   id: string;
@@ -190,9 +190,21 @@ export default function AdminUsers() {
                           </span>
                         )}
                         {user.banned && (
-                          <span className="badge-red">
+                          <span className="badge-red" title={user.banExpiresAt ? `Expires: ${new Date(user.banExpiresAt).toLocaleString()}` : 'Permanent ban'}>
                             <Ban className="w-3 h-3 mr-1" />
-                            Banned
+                            Banned ({(() => {
+                              if (!user.banExpiresAt) return 'Permanent';
+                              const now = new Date().getTime();
+                              const expires = new Date(user.banExpiresAt).getTime();
+                              const diff = expires - now;
+                              if (diff <= 0) return 'Expired';
+                              const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                              const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                              const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                              if (days > 0) return `${days}d ${hours}h`;
+                              if (hours > 0) return `${hours}:${minutes.toString().padStart(2, '0')}`;
+                              return `${minutes}m`;
+                            })()})
                           </span>
                         )}
                         {!user.isAdmin && !user.banned && (
@@ -333,7 +345,30 @@ export default function AdminUsers() {
 
               <div>
                 <label className="label">Ban Duration</label>
-                <select name="banDuration" className="input" defaultValue="">
+                <select 
+                  name="banDuration" 
+                  className="input" 
+                  defaultValue={(() => {
+                    if (!editingUser.banned || !editingUser.banExpiresAt) return '';
+                    const now = new Date().getTime();
+                    const expires = new Date(editingUser.banExpiresAt).getTime();
+                    const diff = expires - now;
+                    if (diff <= 0) return '';
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    // Try to match to closest preset
+                    if (hours < 2) return '1h';
+                    if (hours < 9) return '6h';
+                    if (hours < 18) return '12h';
+                    if (days < 2) return '1d';
+                    if (days < 5) return '3d';
+                    if (days < 10) return '7d';
+                    if (days < 22) return '14d';
+                    if (days < 60) return '30d';
+                    if (days < 120) return '90d';
+                    return '';
+                  })()}
+                >
                   <option value="">Permanent</option>
                   <option value="1h">1 Hour</option>
                   <option value="6h">6 Hours</option>

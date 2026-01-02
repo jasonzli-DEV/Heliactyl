@@ -5,6 +5,87 @@ import { asyncHandler, createError } from '../middleware/error';
 
 const router = Router();
 
+// GET /api/ban-appeal - Get existing ban appeal
+router.get('/', optionalAuth, asyncHandler(async (req: AuthRequest, res) => {
+  if (!req.user) {
+    throw createError('Authentication required', 401);
+  }
+
+  // Check if there's an existing ban appeal
+  const appeal = await prisma.ticket.findFirst({
+    where: {
+      userId: req.user.id,
+      type: 'ban-appeal',
+      status: 'open',
+    },
+    include: {
+      messages: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              isAdmin: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
+  });
+
+  res.json({ appeal });
+}));
+
+// POST /api/ban-appeal/reply - Reply to existing ban appeal
+router.post('/reply', optionalAuth, asyncHandler(async (req: AuthRequest, res) => {
+  if (!req.user) {
+    throw createError('Authentication required', 401);
+  }
+
+  const { message } = req.body;
+
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    throw createError('Message is required', 400);
+  }
+
+  // Find the open ban appeal
+  const appeal = await prisma.ticket.findFirst({
+    where: {
+      userId: req.user.id,
+      type: 'ban-appeal',
+      status: 'open',
+    },
+  });
+
+  if (!appeal) {
+    throw createError('No open ban appeal found', 404);
+  }
+
+  // Add reply to the ticket
+  const reply = await prisma.ticketMessage.create({
+    data: {
+      ticketId: appeal.id,
+      userId: req.user.id,
+      isStaff: false,
+      message: message.trim(),
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          isAdmin: true,
+        },
+      },
+    },
+  });
+
+  res.json({ success: true, message: reply });
+}));
+
 // POST /api/ban-appeal - Submit a ban appeal (creates a ticket)
 router.post('/', optionalAuth, asyncHandler(async (req: AuthRequest, res) => {
   if (!req.user) {

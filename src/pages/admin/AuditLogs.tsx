@@ -95,7 +95,13 @@ export default function AdminAuditLogs() {
                     <td className="text-xs text-gray-500 whitespace-nowrap">
                       {new Date(log.createdAt).toLocaleString()}
                     </td>
-                    <td>{log.user?.username || 'Unknown'}</td>
+                    <td>
+                      {log.userId ? (
+                        log.user?.username || 'Unknown'
+                      ) : (
+                        <span className="text-blue-400 font-medium">System</span>
+                      )}
+                    </td>
                     <td>
                       <span className={`font-medium ${getActionColor(log.action)}`}>
                         {formatAction(log.action)}
