@@ -1,5 +1,34 @@
 {
   "releases": {
+    "1.0.3": {
+      "version": "1.0.3",
+      "date": "2026-01-02",
+      "description": "Rename to Enderactyl and fix update system",
+      "commands": [
+        {
+          "type": "script",
+          "command": "sudo bash update.sh",
+          "description": "Run update via update.sh script (handles all steps)"
+        }
+      ],
+      "breaking": true,
+      "notes": [
+        "MAJOR: Renamed from Heliactyl to Enderactyl across entire codebase",
+        "FIXED: Update system now uses update.sh script (prevents 500 errors)",
+        "FIXED: Removed all duplicate directories (pages 2, components 2, etc.)",
+        "Added deploy.sh for one-command server deployment",
+        "Simplified README and documentation",
+        "Database filename changed: heliactyl.db → enderactyl.db",
+        "Service/directory paths: /var/www/enderactyl",
+        "Update progress logged to /tmp/enderactyl-update.log"
+      ],
+      "upgrade_notes": [
+        "Existing installations: Database file can keep same name (backward compatible)",
+        "Service name stays 'enderactyl' after update",
+        "Update now runs in background with sudo permissions",
+        "Server will restart automatically after ~60 seconds"
+      ]
+    },
     "1.0.2": {
       "version": "1.0.2",
       "date": "2026-01-02",
