@@ -143,6 +143,27 @@ router.get('/callback', asyncHandler(async (req, res) => {
       },
     });
   } else {
+    // Existing user - check if they need a Pterodactyl account
+    let pterodactylId = user.pterodactylId;
+    
+    if (!pterodactylId) {
+      // User doesn't have a Pterodactyl account yet - create or link one
+      try {
+        const existingPteroUser = await findPteroUserByEmail(discordUser.email);
+        
+        if (existingPteroUser) {
+          pterodactylId = existingPteroUser.id;
+          console.log(`Linked existing Pterodactyl account ${existingPteroUser.id} for returning user ${discordUser.email}`);
+        } else {
+          const { userId } = await createPteroUserWithPassword(discordUser.email, discordUser.username);
+          pterodactylId = userId;
+          console.log(`Created new Pterodactyl account ${userId} for returning user ${discordUser.email}`);
+        }
+      } catch (error) {
+        console.error('Failed to create/link Pterodactyl account for existing user:', error);
+      }
+    }
+    
     // Update existing user
     user = await prisma.user.update({
       where: { id: user.id },
@@ -154,6 +175,7 @@ router.get('/callback', asyncHandler(async (req, res) => {
         discordRefreshToken: tokens.refresh_token,
         lastIp: req.ip,
         lastLogin: new Date(),
+        ...(pterodactylId && { pterodactylId }), // Update pterodactylId if we got one
       },
     });
   }
