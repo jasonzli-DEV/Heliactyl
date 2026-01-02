@@ -1,5 +1,30 @@
 {
   "releases": {
+    "1.0.2": {
+      "version": "1.0.2",
+      "date": "2026-01-02",
+      "description": "Billing configuration fixes and footer customization",
+      "commands": [
+        {
+          "type": "migration",
+          "command": "npx prisma generate && npx prisma db push --accept-data-loss",
+          "description": "Add footerText field to Settings model"
+        },
+        {
+          "type": "build",
+          "command": "npm run build:client && npm run build:server",
+          "description": "Rebuild with footer markdown parser and billing fixes"
+        }
+      ],
+      "breaking": false,
+      "notes": [
+        "Removed 'Enable Hourly Billing' toggle (always enabled)",
+        "Fixed billing rate defaults (1024MB RAM, 50% CPU, 5120MB Disk per credit)",
+        "Added footer text customization with markdown support",
+        "Supports **bold** and [link](url) in footer",
+        "Added footerText field to database schema"
+      ]
+    },
     "1.0.1": {
       "version": "1.0.1",
       "date": "2026-01-02",

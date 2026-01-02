@@ -1,6 +1,6 @@
 {
   "name": "heliactyl",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Modern Pterodactyl client area with admin dashboard",
   "main": "dist/server/index.js",
   "scripts": {
