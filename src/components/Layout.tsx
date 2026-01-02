@@ -24,6 +24,7 @@ import {
   Key,
   Trash2,
   ChevronDown,
+  MessageSquare,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -37,6 +38,7 @@ const userNavItems = [
   { to: '/store', icon: ShoppingCart, label: 'Store' },
   { to: '/redeem', icon: Ticket, label: 'Redeem' },
   { to: '/earn', icon: Gift, label: 'Earn Coins' },
+  { to: '/tickets', icon: MessageSquare, label: 'Support' },
 ];
 
 const adminNavItems = [

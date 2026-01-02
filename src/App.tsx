@@ -15,6 +15,8 @@ import CreateServer from './pages/CreateServer';
 import Store from './pages/Store';
 import Redeem from './pages/Redeem';
 import Earn from './pages/Earn';
+import Tickets from './pages/Tickets';
+import TicketView from './pages/TicketView';
 import Account from './pages/Account';
 
 // Admin Pages
@@ -52,6 +54,8 @@ export default function App() {
                 <Route path="/store" element={<Store />} />
                 <Route path="/redeem" element={<Redeem />} />
                 <Route path="/earn" element={<Earn />} />
+                <Route path="/tickets" element={<Tickets />} />
+                <Route path="/tickets/:id" element={<TicketView />} />
                 <Route path="/account" element={<Account />} />
               </Route>
             </Route>

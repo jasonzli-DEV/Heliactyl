@@ -17,6 +17,7 @@ import pterodactylRoutes from './routes/pterodactyl';
 import setupRoutes from './routes/setup';
 import systemRoutes from './routes/system';
 import earnRoutes from './routes/earn';
+import ticketsRoutes from './routes/tickets';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,6 +44,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/pterodactyl', pterodactylRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/earn', earnRoutes);
+app.use('/api/tickets', ticketsRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
