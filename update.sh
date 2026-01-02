@@ -5,7 +5,7 @@
 set -e
 
 INSTALL_DIR="/var/www/heliactyl"
-GITHUB_REPO="https://github.com/EnderBit/heliactyl.git"
+GITHUB_REPO="https://github.com/jasonzli-DEV/Heliactyl.git"
 BRANCH="main"
 
 # Colors
