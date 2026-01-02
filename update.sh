@@ -4,7 +4,7 @@
 
 set -e
 
-INSTALL_DIR="/var/www/enderactyl"
+INSTALL_DIR="/var/www/heliactyl"
 GITHUB_REPO="https://github.com/jasonzli-DEV/Enderactyl.git"
 BRANCH="main"
 
