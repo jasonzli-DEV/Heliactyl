@@ -96,13 +96,35 @@ router.post('/purchase', requireAuth, asyncHandler(async (req: AuthRequest, res)
 }));
 
 // GET /api/store/locations - List available locations
-router.get('/locations', asyncHandler(async (req, res) => {
+router.get('/locations', asyncHandler(async (_req, res) => {
   const locations = await prisma.location.findMany({
     where: { enabled: true },
     orderBy: { name: 'asc' },
   });
 
-  res.json({ locations });
+  // Filter out locations that are full by checking Pterodactyl nodes
+  const locationsWithCapacity = await Promise.all(
+    locations.map(async (loc) => {
+      try {
+        // Check if location has capacity via Pterodactyl API
+        const nodes = await pterodactyl.getNodes();
+        const locationNodes = nodes.filter((n: any) => n.attributes.location_id === loc.pterodactylId);
+        
+        const hasCapacity = locationNodes.some((node: any) => {
+          const allocated = node.attributes.allocated_resources?.memory || 0;
+          const total = node.attributes.memory || 0;
+          return total > 0 && allocated < total;
+        });
+        
+        return hasCapacity ? loc : null;
+      } catch (error) {
+        // If error checking capacity, include location to be safe
+        return loc;
+      }
+    })
+  );
+
+  res.json({ locations: locationsWithCapacity.filter(Boolean) });
 }));
 
 // GET /api/store/eggs - List available eggs

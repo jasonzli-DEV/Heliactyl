@@ -49,6 +49,7 @@ const adminNavItems = [
   { to: '/admin/locations', icon: MapPin, label: 'Locations' },
   { to: '/admin/eggs', icon: Egg, label: 'Eggs' },
   { to: '/admin/coupons', icon: Tags, label: 'Coupons' },
+  { to: '/admin/tickets', icon: MessageSquare, label: 'Tickets' },
   { to: '/admin/settings', icon: Settings, label: 'Settings' },
   { to: '/admin/audit-logs', icon: ClipboardList, label: 'Audit Logs' },
 ];

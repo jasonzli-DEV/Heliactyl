@@ -145,6 +145,11 @@ router.put('/packages/:id', asyncHandler(async (req: AuthRequest, res) => {
   res.json({ package: pkg });
 }));
 
+router.patch('/packages/:id', asyncHandler(async (req: AuthRequest, res) => {
+  const pkg = await prisma.package.update({ where: { id: req.params.id }, data: req.body });
+  res.json({ package: pkg });
+}));
+
 router.delete('/packages/:id', asyncHandler(async (req: AuthRequest, res) => {
   await prisma.package.delete({ where: { id: req.params.id } });
   res.json({ success: true });
@@ -284,6 +289,80 @@ router.get('/audit-logs', asyncHandler(async (req: AuthRequest, res) => {
     prisma.auditLog.count(),
   ]);
   res.json({ logs, pagination: { page: parseInt(page as string), limit: parseInt(limit as string), total, pages: Math.ceil(total / parseInt(limit as string)) } });
+}));
+
+// Tickets Management
+// GET /api/admin/tickets - Get all tickets
+router.get('/tickets', asyncHandler(async (req: AuthRequest, res) => {
+  const { status = 'open' } = req.query;
+  
+  const tickets = await prisma.ticket.findMany({
+    where: status === 'all' ? {} : { status: status as string },
+    include: {
+      user: {
+        select: { id: true, username: true, discordId: true }
+      },
+      messages: {
+        orderBy: { createdAt: 'asc' },
+        include: {
+          user: {
+            select: { username: true }
+          }
+        }
+      }
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+  
+  res.json({ tickets });
+}));
+
+// POST /api/admin/tickets/:id/reply - Reply to ticket as staff
+router.post('/tickets/:id/reply', asyncHandler(async (req: AuthRequest, res) => {
+  const { message } = req.body;
+  
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+  
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: req.params.id }
+  });
+  
+  if (!ticket) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+  
+  const reply = await prisma.ticketMessage.create({
+    data: {
+      ticketId: req.params.id,
+      userId: req.user!.id,
+      message,
+      isStaff: true,
+    },
+    include: {
+      user: {
+        select: { username: true }
+      }
+    }
+  });
+  
+  await prisma.ticket.update({
+    where: { id: req.params.id },
+    data: { updatedAt: new Date() }
+  });
+  
+  res.status(201).json({ message: reply });
+}));
+
+// PATCH /api/admin/tickets/:id/close - Close a ticket
+router.patch('/tickets/:id/close', asyncHandler(async (req: AuthRequest, res) => {
+  const ticket = await prisma.ticket.update({
+    where: { id: req.params.id },
+    data: { status: 'closed' }
+  });
+  
+  res.json({ ticket });
 }));
 
 export default router;

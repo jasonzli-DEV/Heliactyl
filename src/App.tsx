@@ -27,6 +27,7 @@ import AdminPackages from './pages/admin/Packages';
 import AdminLocations from './pages/admin/Locations';
 import AdminEggs from './pages/admin/Eggs';
 import AdminCoupons from './pages/admin/Coupons';
+import AdminTickets from './pages/admin/Tickets';
 import AdminSettings from './pages/admin/Settings';
 import AdminAuditLogs from './pages/admin/AuditLogs';
 
@@ -73,6 +74,7 @@ export default function App() {
                 <Route path="/admin/locations" element={<AdminLocations />} />
                 <Route path="/admin/eggs" element={<AdminEggs />} />
                 <Route path="/admin/coupons" element={<AdminCoupons />} />
+                <Route path="/admin/tickets" element={<AdminTickets />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
                 <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
               </Route>

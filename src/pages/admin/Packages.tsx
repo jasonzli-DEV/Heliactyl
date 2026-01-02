@@ -112,7 +112,7 @@ export default function AdminPackages() {
           </div>
           <div>
             <label className="label">Price (coins)</label>
-            <input type="number" name="price" defaultValue={pkg?.price || 0} className="input" />
+            <input type="number" name="price" min="0" defaultValue={pkg?.price || 0} className="input" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

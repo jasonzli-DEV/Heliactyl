@@ -2,8 +2,12 @@ import { Router } from 'express';
 import { prisma } from '../lib/database';
 import { asyncHandler } from '../middleware/error';
 import type { AuthRequest } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
+
+// Protect all ticket routes
+router.use(requireAuth);
 
 // GET /api/tickets - Get all tickets for current user
 router.get('/', asyncHandler(async (req: AuthRequest, res) => {
