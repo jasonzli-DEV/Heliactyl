@@ -3,13 +3,14 @@ import { prisma } from '../lib/database';
 import { requireAuth, type AuthRequest } from '../middleware/auth';
 import { asyncHandler, createError } from '../middleware/error';
 import * as pterodactyl from '../lib/pterodactyl';
+import { calculateHourlyCost } from '../lib/billing';
 
 const router = Router();
 
 // All routes require authentication
 router.use(requireAuth);
 
-// GET /api/servers - List user's servers
+// GET /api/servers - List user's servers with billing info
 router.get('/', asyncHandler(async (req: AuthRequest, res) => {
   const servers = await prisma.server.findMany({
     where: { userId: req.user!.id },
@@ -20,7 +21,39 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
     orderBy: { createdAt: 'desc' },
   });
 
-  res.json({ servers });
+  // Get billing rates
+  const settings = await prisma.settings.findFirst();
+  const billingEnabled = settings?.billingEnabled || false;
+  
+  // Add hourly cost to each server if billing is enabled
+  const serversWithCost = servers.map(server => {
+    let hourlyCost = 0;
+    if (billingEnabled && settings) {
+      hourlyCost = calculateHourlyCost(
+        server.ram,
+        server.cpu,
+        server.disk,
+        server.databases,
+        server.allocations,
+        server.backups,
+        {
+          ramRate: settings.billingRamRate || 1,
+          cpuRate: settings.billingCpuRate || 1,
+          diskRate: settings.billingDiskRate || 1,
+          databaseRate: settings.billingDatabaseRate || 1,
+          allocationRate: settings.billingAllocationRate || 1,
+          backupRate: settings.billingBackupRate || 1,
+          gracePeriod: settings.billingGracePeriod || 24,
+        }
+      );
+    }
+    return {
+      ...server,
+      hourlyCost: Math.ceil(hourlyCost),
+    };
+  });
+
+  res.json({ servers: serversWithCost, billingEnabled });
 }));
 
 // GET /api/servers/:id - Get server details
@@ -45,7 +78,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // POST /api/servers - Create a new server
 router.post('/', asyncHandler(async (req: AuthRequest, res) => {
-  const { name, locationId, eggId, ram, disk, cpu, databases, backups, allocations } = req.body;
+  const { name, locationId, eggId, ram, disk, cpu, databases, backups, allocations, environment } = req.body;
 
   // Validate input
   if (!name || !locationId || !eggId) {
@@ -138,6 +171,10 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   // Create server on Pterodactyl
+  // Merge default environment with user-provided environment variables
+  const defaultEnvironment = JSON.parse(egg.environment || '{}');
+  const mergedEnvironment = { ...defaultEnvironment, ...(environment || {}) };
+  
   const pteroServer = await pterodactyl.createPteroServer({
     name,
     userId: user.pterodactylId,
@@ -150,7 +187,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
     backups: requestedBackups,
     allocations: requestedAllocations,
     startup: egg.startup,
-    environment: JSON.parse(egg.environment || '{}'),
+    environment: mergedEnvironment,
     dockerImage: egg.dockerImage,
     nestId: egg.nestId,
   }) as { attributes: { id: number } };

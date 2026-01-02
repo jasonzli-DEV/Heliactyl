@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Egg, Plus, Edit, Trash2, Loader2, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Egg, Plus, Edit, Trash2, Loader2, RefreshCw, ChevronDown, ChevronRight, Folder } from 'lucide-react';
 
 interface EggData {
   id: string;
@@ -20,6 +20,48 @@ export default function AdminEggs() {
   const [editing, setEditing] = useState<EggData | null>(null);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [expandedNests, setExpandedNests] = useState<Set<number>>(new Set());
+
+  // Group eggs by nestId, sorted by nestId
+  const nestGroups = useMemo(() => {
+    const groups = new Map<number, EggData[]>();
+    for (const egg of eggs) {
+      if (!groups.has(egg.nestId)) {
+        groups.set(egg.nestId, []);
+      }
+      groups.get(egg.nestId)!.push(egg);
+    }
+    // Sort each group's eggs by name
+    for (const [, groupEggs] of groups) {
+      groupEggs.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    // Return sorted by nestId
+    return Array.from(groups.entries()).sort((a, b) => a[0] - b[0]);
+  }, [eggs]);
+
+  useEffect(() => {
+    fetchEggs();
+  }, []);
+
+  // Auto-expand all nests on load
+  useEffect(() => {
+    if (eggs.length > 0) {
+      const nestIds = new Set(eggs.map(e => e.nestId));
+      setExpandedNests(nestIds);
+    }
+  }, [eggs]);
+
+  const toggleNest = (nestId: number) => {
+    setExpandedNests(prev => {
+      const next = new Set(prev);
+      if (next.has(nestId)) {
+        next.delete(nestId);
+      } else {
+        next.add(nestId);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchEggs();
@@ -128,49 +170,76 @@ export default function AdminEggs() {
           </button>
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Nest ID</th>
-                <th>Pterodactyl ID</th>
-                <th>Docker Image</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {eggs.map((egg) => (
-                <tr key={egg.id}>
-                  <td>
-                    <div>
-                      <p className="font-medium text-white">{egg.name}</p>
-                      <p className="text-xs text-gray-500 truncate max-w-[200px]">{egg.description}</p>
-                    </div>
-                  </td>
-                  <td>{egg.nestId}</td>
-                  <td>{egg.pterodactylId}</td>
-                  <td className="text-xs text-gray-400 truncate max-w-[150px]">{egg.dockerImage}</td>
-                  <td>
-                    <span className={egg.enabled ? 'badge-green' : 'badge-gray'}>
-                      {egg.enabled ? 'Enabled' : 'Disabled'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="flex gap-1">
-                      <button onClick={() => setEditing(egg)} className="btn-ghost p-2">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => deleteEgg(egg.id)} className="btn-ghost p-2 text-red-400">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {nestGroups.map(([nestId, nestEggs]) => (
+            <div key={nestId} className="card overflow-hidden">
+              {/* Nest Header */}
+              <button
+                onClick={() => toggleNest(nestId)}
+                className="w-full flex items-center justify-between p-4 bg-dark-700/50 hover:bg-dark-700 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedNests.has(nestId) ? (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  )}
+                  <Folder className="w-5 h-5 text-accent-400" />
+                  <span className="font-semibold text-white">Nest #{nestId}</span>
+                  <span className="text-sm text-gray-500">({nestEggs.length} eggs)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs ${nestEggs.every(e => e.enabled) ? 'text-green-400' : nestEggs.some(e => e.enabled) ? 'text-yellow-400' : 'text-gray-500'}`}>
+                    {nestEggs.filter(e => e.enabled).length} / {nestEggs.length} enabled
+                  </span>
+                </div>
+              </button>
+              
+              {/* Eggs Table */}
+              {expandedNests.has(nestId) && (
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Pterodactyl ID</th>
+                      <th>Docker Image</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {nestEggs.map((egg) => (
+                      <tr key={egg.id}>
+                        <td>
+                          <div>
+                            <p className="font-medium text-white">{egg.name}</p>
+                            <p className="text-xs text-gray-500 truncate max-w-[200px]">{egg.description}</p>
+                          </div>
+                        </td>
+                        <td>{egg.pterodactylId}</td>
+                        <td className="text-xs text-gray-400 truncate max-w-[150px]">{egg.dockerImage}</td>
+                        <td>
+                          <span className={egg.enabled ? 'badge-green' : 'badge-gray'}>
+                            {egg.enabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="flex gap-1">
+                            <button onClick={() => setEditing(egg)} className="btn-ghost p-2">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteEgg(egg.id)} className="btn-ghost p-2 text-red-400">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

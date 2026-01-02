@@ -97,7 +97,10 @@ const ALLOWED_SETTINGS_FIELDS = [
   'allowNewUsers', 'maintenanceMode', 'maintenanceMessage',
   'defaultRam', 'defaultDisk', 'defaultCpu', 'defaultServers', 'defaultDatabases', 'defaultBackups', 'defaultAllocations', 'defaultCoins',
   'afkEnabled', 'afkCoinsPerMinute', 'afkMaxMinutes', 'afkInterval',
-  'storeEnabled', 'earnEnabled', 'earnLinks', 'cutyApiToken',
+  'storeEnabled', 'earnEnabled', 'earnCoins', 'earnCooldown', 'cutyApiToken',
+  // Hourly billing settings
+  'billingEnabled', 'billingRamRate', 'billingCpuRate', 'billingDiskRate',
+  'billingDatabaseRate', 'billingAllocationRate', 'billingBackupRate', 'billingGracePeriod',
 ] as const;
 
 // PATCH /api/settings - Update settings (admin only)

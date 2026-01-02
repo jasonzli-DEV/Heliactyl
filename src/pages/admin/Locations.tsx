@@ -7,6 +7,7 @@ interface Location {
   description: string | null;
   pterodactylId: number;
   enabled: boolean;
+  hasCapacity?: boolean;
 }
 
 export default function AdminLocations() {
@@ -59,7 +60,7 @@ export default function AdminLocations() {
     try {
       const isNew = !loc.id;
       const res = await fetch(isNew ? '/api/admin/locations' : `/api/admin/locations/${loc.id}`, {
-        method: isNew ? 'POST' : 'PATCH',
+        method: isNew ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(loc),
@@ -138,9 +139,13 @@ export default function AdminLocations() {
                   <td>{loc.description || '-'}</td>
                   <td>{loc.pterodactylId}</td>
                   <td>
-                    <span className={loc.enabled ? 'badge-green' : 'badge-gray'}>
-                      {loc.enabled ? 'Enabled' : 'Disabled'}
-                    </span>
+                    {!loc.enabled ? (
+                      <span className="badge-gray">Disabled</span>
+                    ) : loc.hasCapacity === false ? (
+                      <span className="badge-red">Full</span>
+                    ) : (
+                      <span className="badge-green">Enabled</span>
+                    )}
                   </td>
                   <td>
                     <div className="flex gap-1">

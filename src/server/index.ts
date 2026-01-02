@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { prisma, initializeDatabase } from './lib/database';
 import { errorHandler, notFound } from './middleware/error';
+import { startBillingService, stopBillingService } from './lib/billing';
 
 // Routes
 import authRoutes from './routes/auth';
@@ -65,6 +66,9 @@ async function start() {
   try {
     await initializeDatabase();
     
+    // Start billing service
+    startBillingService();
+    
     app.listen(PORT, () => {
       console.log(`🚀 EnderBit Dashboard running on http://localhost:${PORT}`);
     });
@@ -76,6 +80,7 @@ async function start() {
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
+  stopBillingService();
   await prisma.$disconnect();
   process.exit(0);
 });

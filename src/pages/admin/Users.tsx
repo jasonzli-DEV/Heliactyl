@@ -73,7 +73,7 @@ export default function AdminUsers() {
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(updates),

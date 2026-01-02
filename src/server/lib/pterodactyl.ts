@@ -32,6 +32,30 @@ async function pteroRequest(endpoint: string, options: PteroRequestOptions = {})
 
   if (!response.ok) {
     const error = await response.text();
+    
+    // Parse common Pterodactyl errors into user-friendly messages
+    if (response.status === 400) {
+      // Check for allocation/capacity errors
+      if (error.includes('No allocations') || error.includes('allocation') || error.includes('deploy')) {
+        throw new Error('This location is currently full. Please try a different location.');
+      }
+      if (error.includes('disk') || error.includes('memory') || error.includes('cpu')) {
+        throw new Error('The selected location does not have enough resources available. Please try a different location or reduce your resource request.');
+      }
+    }
+    
+    if (response.status === 404) {
+      throw new Error('The requested resource was not found on the panel.');
+    }
+    
+    if (response.status === 403) {
+      throw new Error('Permission denied. Please check the API key configuration.');
+    }
+    
+    if (response.status === 500) {
+      throw new Error('The game panel encountered an internal error. Please try again later.');
+    }
+    
     throw new Error(`Pterodactyl API error: ${response.status} - ${error}`);
   }
 

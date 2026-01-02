@@ -93,6 +93,10 @@ model Server {
   renewalDate     DateTime?
   suspended       Boolean   @default(false)
   
+  // Billing tracking
+  lastBilledAt    DateTime  @default(now())  // Last time server was billed
+  billingBalance  Float     @default(0)      // Accumulated hourly cost owed
+  
   // Timestamps
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -171,6 +175,16 @@ model Settings {
   diskPrice             Int      @default(10)
   cpuPrice              Int      @default(20)
   serverPrice           Int      @default(100)
+  
+  // Hourly billing settings (credits per hour per resource unit)
+  billingEnabled        Boolean  @default(false)  // Enable hourly billing
+  billingRamRate        Float    @default(1)      // Credits per hour per 1GB RAM
+  billingCpuRate        Float    @default(1)      // Credits per hour per 50% CPU
+  billingDiskRate       Float    @default(1)      // Credits per hour per 5GB disk
+  billingDatabaseRate   Float    @default(1)      // Credits per hour per database
+  billingAllocationRate Float    @default(1)      // Credits per hour per allocation
+  billingBackupRate     Float    @default(1)      // Credits per hour per backup
+  billingGracePeriod    Int      @default(24)     // Hours before suspension
   
   // Timestamps
   updatedAt             DateTime @updatedAt

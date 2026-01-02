@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2 } from 'lucide-react';
+import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins } from 'lucide-react';
 
 interface ServerData {
   id: string;
@@ -13,6 +13,7 @@ interface ServerData {
   databases: number;
   backups: number;
   allocations: number;
+  hourlyCost?: number;
   location: {
     name: string;
     description: string | null;
@@ -28,6 +29,7 @@ export default function Servers() {
   const [servers, setServers] = useState<ServerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [billingEnabled, setBillingEnabled] = useState(false);
 
   useEffect(() => {
     fetchServers();
@@ -38,6 +40,7 @@ export default function Servers() {
       const res = await fetch('/api/servers', { credentials: 'include' });
       const data = await res.json();
       setServers(data.servers || []);
+      setBillingEnabled(data.billingEnabled || false);
     } catch (error) {
       console.error('Failed to fetch servers:', error);
     } finally {
@@ -165,9 +168,17 @@ export default function Servers() {
                 </div>
               </div>
 
-              <p className="mt-4 text-xs text-gray-600">
-                Created {new Date(server.createdAt).toLocaleDateString()}
-              </p>
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-xs text-gray-600">
+                  Created {new Date(server.createdAt).toLocaleDateString()}
+                </p>
+                {billingEnabled && server.hourlyCost !== undefined && server.hourlyCost > 0 && (
+                  <div className="flex items-center gap-1 text-xs text-amber-400">
+                    <Coins className="w-3 h-3" />
+                    <span>{server.hourlyCost}/hr</span>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

@@ -153,7 +153,32 @@ router.delete('/packages/:id', asyncHandler(async (req: AuthRequest, res) => {
 // Locations
 router.get('/locations', asyncHandler(async (req: AuthRequest, res) => {
   const locations = await prisma.location.findMany({ orderBy: { name: 'asc' } });
-  res.json({ locations });
+  
+  // Get capacity info from Pterodactyl
+  let capacityMap: Record<number, { hasCapacity: boolean }> = {};
+  try {
+    const nodes = await pterodactyl.getNodesWithUsage();
+    // Group nodes by location and check if any node has capacity
+    for (const node of nodes) {
+      if (!capacityMap[node.locationId]) {
+        capacityMap[node.locationId] = { hasCapacity: false };
+      }
+      // Consider location has capacity if any node has at least 512MB RAM available
+      if (node.availableMemory >= 512) {
+        capacityMap[node.locationId].hasCapacity = true;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to get node capacity:', err);
+  }
+  
+  // Add capacity info to locations
+  const locationsWithCapacity = locations.map(loc => ({
+    ...loc,
+    hasCapacity: capacityMap[loc.pterodactylId]?.hasCapacity ?? true, // Assume has capacity if unknown
+  }));
+  
+  res.json({ locations: locationsWithCapacity });
 }));
 
 router.post('/locations/sync', asyncHandler(async (req: AuthRequest, res) => {
@@ -205,7 +230,10 @@ router.put('/eggs/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Coupons
 router.get('/coupons', asyncHandler(async (req: AuthRequest, res) => {
-  const coupons = await prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } });
+  const coupons = await prisma.coupon.findMany({ 
+    orderBy: { createdAt: 'desc' },
+    include: { _count: { select: { uses: true } } },
+  });
   res.json({ coupons });
 }));
 

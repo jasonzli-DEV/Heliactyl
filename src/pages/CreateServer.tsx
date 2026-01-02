@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Server, Loader2, MapPin, Egg, ArrowLeft } from 'lucide-react';
+import { Server, Loader2, MapPin, Egg, ArrowLeft, ChevronDown, ChevronRight, Folder, Settings2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Location {
@@ -14,9 +14,19 @@ interface Location {
 interface EggData {
   id: string;
   name: string;
+  displayName: string;
   description: string | null;
   nestId: number;
   pterodactylId: number;
+}
+
+interface EggVariable {
+  name: string;
+  description: string;
+  envVariable: string;
+  defaultValue: string;
+  userEditable: boolean;
+  rules: string;
 }
 
 export default function CreateServer() {
@@ -28,6 +38,9 @@ export default function CreateServer() {
   
   const [locations, setLocations] = useState<Location[]>([]);
   const [eggs, setEggs] = useState<EggData[]>([]);
+  const [variables, setVariables] = useState<EggVariable[]>([]);
+  const [loadingVariables, setLoadingVariables] = useState(false);
+  const [expandedNests, setExpandedNests] = useState<Set<number>>(new Set());
   
   const [form, setForm] = useState({
     name: '',
@@ -39,7 +52,22 @@ export default function CreateServer() {
     databases: 0,
     backups: 0,
     allocations: 1,
+    environment: {} as Record<string, string>,
   });
+
+  // Group eggs by nestId
+  const nestGroups = useMemo(() => {
+    const groups = new Map<number, EggData[]>();
+    eggs.forEach(egg => {
+      const existing = groups.get(egg.nestId) || [];
+      existing.push(egg);
+      groups.set(egg.nestId, existing);
+    });
+    return Array.from(groups.entries()).sort((a, b) => a[0] - b[0]);
+  }, [eggs]);
+
+  // Get selected egg name for display
+  const selectedEgg = eggs.find(e => e.id === form.eggId);
 
   useEffect(() => {
     fetchOptions();
@@ -61,6 +89,50 @@ export default function CreateServer() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch egg variables when egg is selected
+  const fetchVariables = async (eggId: string) => {
+    if (!eggId) {
+      setVariables([]);
+      return;
+    }
+    
+    setLoadingVariables(true);
+    try {
+      const res = await fetch(`/api/store/eggs/${eggId}/variables`, { credentials: 'include' });
+      const data = await res.json();
+      setVariables(data.variables || []);
+      
+      // Initialize environment with default values
+      const defaultEnv: Record<string, string> = {};
+      (data.variables || []).forEach((v: EggVariable) => {
+        defaultEnv[v.envVariable] = v.defaultValue;
+      });
+      setForm(prev => ({ ...prev, environment: defaultEnv }));
+    } catch (error) {
+      console.error('Failed to fetch variables:', error);
+      setVariables([]);
+    } finally {
+      setLoadingVariables(false);
+    }
+  };
+
+  const toggleNest = (nestId: number) => {
+    setExpandedNests(prev => {
+      const next = new Set(prev);
+      if (next.has(nestId)) {
+        next.delete(nestId);
+      } else {
+        next.add(nestId);
+      }
+      return next;
+    });
+  };
+
+  const selectEgg = (egg: EggData) => {
+    setForm(prev => ({ ...prev, eggId: egg.id }));
+    fetchVariables(egg.id);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,7 +194,7 @@ export default function CreateServer() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-2xl mx-auto animate-fadeIn">
+    <div className="p-6 lg:p-8 max-w-4xl mx-auto animate-fadeIn">
       {/* Header */}
       <div className="mb-8">
         <Link to="/servers" className="inline-flex items-center gap-2 text-gray-400 hover:text-gray-200 mb-4">
@@ -133,178 +205,278 @@ export default function CreateServer() {
         <p className="text-gray-400">Deploy a new game server.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="card p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
             <p className="text-sm text-red-400">{error}</p>
           </div>
         )}
 
-        {/* Server name */}
-        <div>
-          <label className="label">Server Name</label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="My Awesome Server"
-            className="input"
-            required
-          />
-        </div>
-
-        {/* Location */}
-        <div>
-          <label className="label">
-            <MapPin className="w-4 h-4 inline mr-1" />
-            Location
-          </label>
+        {/* Step 1: Server Type (Egg) */}
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Egg className="w-5 h-5 text-accent-400" />
+            Step 1: Select Server Type
+          </h2>
+          
           {loading ? (
-            <div className="skeleton h-11 w-full" />
-          ) : (
-            <select
-              value={form.locationId}
-              onChange={(e) => setForm({ ...form, locationId: e.target.value })}
-              className="input"
-              required
-            >
-              <option value="">Select a location</option>
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name} {loc.description ? `- ${loc.description}` : ''}
-                </option>
+            <div className="space-y-3">
+              {[1, 2].map(i => (
+                <div key={i} className="skeleton h-12 w-full" />
               ))}
-            </select>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {nestGroups.map(([nestId, nestEggs]) => (
+                <div key={nestId} className="border border-dark-600 rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => toggleNest(nestId)}
+                    className="w-full flex items-center justify-between p-3 bg-dark-700/50 hover:bg-dark-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      {expandedNests.has(nestId) ? (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      )}
+                      <Folder className="w-4 h-4 text-accent-400" />
+                      <span className="font-medium text-white">Nest #{nestId}</span>
+                      <span className="text-sm text-gray-500">({nestEggs.length} types)</span>
+                    </div>
+                  </button>
+                  
+                  {expandedNests.has(nestId) && (
+                    <div className="p-2 space-y-1 bg-dark-800/50">
+                      {nestEggs.map((egg) => (
+                        <button
+                          key={egg.id}
+                          type="button"
+                          onClick={() => selectEgg(egg)}
+                          className={`w-full text-left p-3 rounded-lg transition-colors ${
+                            form.eggId === egg.id
+                              ? 'bg-accent-500/20 border border-accent-500/50'
+                              : 'hover:bg-dark-700 border border-transparent'
+                          }`}
+                        >
+                          <p className="font-medium text-white">{egg.displayName || egg.name}</p>
+                          {egg.description && (
+                            <p className="text-sm text-gray-400 mt-1 line-clamp-2">{egg.description}</p>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selectedEgg && (
+            <div className="mt-4 p-3 bg-accent-500/10 border border-accent-500/30 rounded-lg">
+              <p className="text-sm text-accent-400">
+                Selected: <span className="font-semibold">{selectedEgg.displayName || selectedEgg.name}</span>
+              </p>
+            </div>
           )}
         </div>
 
-        {/* Egg */}
-        <div>
-          <label className="label">
-            <Egg className="w-4 h-4 inline mr-1" />
-            Server Type (Egg)
-          </label>
-          {loading ? (
-            <div className="skeleton h-11 w-full" />
-          ) : (
-            <select
-              value={form.eggId}
-              onChange={(e) => setForm({ ...form, eggId: e.target.value })}
-              className="input"
-              required
-            >
-              <option value="">Select a server type</option>
-              {eggs.map((egg) => (
-                <option key={egg.id} value={egg.id}>
-                  {egg.name} {egg.description ? `- ${egg.description}` : ''}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        {/* Step 2: Egg Variables (if any) */}
+        {form.eggId && (
+          <div className="card p-6">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-accent-400" />
+              Step 2: Server Configuration
+            </h2>
 
-        {/* Resources */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="label">RAM (MB)</label>
-            <input
-              type="number"
-              value={form.ram}
-              onChange={(e) => setForm({ ...form, ram: parseInt(e.target.value) || 0 })}
-              min={128}
-              step={128}
-              className="input"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Available: {(user?.ram || 0).toLocaleString()} MB
-            </p>
+            {loadingVariables ? (
+              <div className="space-y-3">
+                {[1, 2].map(i => (
+                  <div key={i} className="skeleton h-16 w-full" />
+                ))}
+              </div>
+            ) : variables.length > 0 ? (
+              <div className="space-y-4">
+                {variables.filter(v => v.userEditable).map((variable) => (
+                  <div key={variable.envVariable}>
+                    <label className="label">{variable.name}</label>
+                    <input
+                      type="text"
+                      value={form.environment[variable.envVariable] || ''}
+                      onChange={(e) => setForm(prev => ({
+                        ...prev,
+                        environment: { ...prev.environment, [variable.envVariable]: e.target.value }
+                      }))}
+                      placeholder={variable.defaultValue}
+                      className="input"
+                    />
+                    {variable.description && (
+                      <p className="text-xs text-gray-500 mt-1">{variable.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-sm">No configurable options for this server type.</p>
+            )}
           </div>
-          <div>
-            <label className="label">Disk (MB)</label>
-            <input
-              type="number"
-              value={form.disk}
-              onChange={(e) => setForm({ ...form, disk: parseInt(e.target.value) || 0 })}
-              min={256}
-              step={256}
-              className="input"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Available: {(user?.disk || 0).toLocaleString()} MB
-            </p>
-          </div>
-          <div>
-            <label className="label">CPU (%)</label>
-            <input
-              type="number"
-              value={form.cpu}
-              onChange={(e) => setForm({ ...form, cpu: parseInt(e.target.value) || 0 })}
-              min={25}
-              step={25}
-              className="input"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Available: {user?.cpu || 0}%
-            </p>
-          </div>
-        </div>
+        )}
 
-        {/* Feature limits */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="label">Databases</label>
-            <input
-              type="number"
-              value={form.databases}
-              onChange={(e) => setForm({ ...form, databases: parseInt(e.target.value) || 0 })}
-              min={0}
-              className="input"
-            />
+        {/* Step 3: Location */}
+        {form.eggId && (
+          <div className="card p-6">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-accent-400" />
+              Step 3: Select Location
+            </h2>
+            
+            {loading ? (
+              <div className="skeleton h-11 w-full" />
+            ) : (
+              <select
+                value={form.locationId}
+                onChange={(e) => setForm({ ...form, locationId: e.target.value })}
+                className="input"
+                required
+              >
+                <option value="">Select a location</option>
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name} {loc.description ? `- ${loc.description}` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-          <div>
-            <label className="label">Backups</label>
-            <input
-              type="number"
-              value={form.backups}
-              onChange={(e) => setForm({ ...form, backups: parseInt(e.target.value) || 0 })}
-              min={0}
-              className="input"
-            />
+        )}
+
+        {/* Step 4: Resources & Details */}
+        {form.eggId && form.locationId && (
+          <div className="card p-6">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Server className="w-5 h-5 text-accent-400" />
+              Step 4: Server Details
+            </h2>
+
+            {/* Server name */}
+            <div className="mb-6">
+              <label className="label">Server Name</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="My Awesome Server"
+                className="input"
+                required
+              />
+            </div>
+
+            {/* Resources */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div>
+                <label className="label">RAM (MB)</label>
+                <input
+                  type="number"
+                  value={form.ram}
+                  onChange={(e) => setForm({ ...form, ram: parseInt(e.target.value) || 0 })}
+                  min={128}
+                  step={128}
+                  className="input"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Available: {(user?.ram || 0).toLocaleString()} MB
+                </p>
+              </div>
+              <div>
+                <label className="label">Disk (MB)</label>
+                <input
+                  type="number"
+                  value={form.disk}
+                  onChange={(e) => setForm({ ...form, disk: parseInt(e.target.value) || 0 })}
+                  min={256}
+                  step={256}
+                  className="input"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Available: {(user?.disk || 0).toLocaleString()} MB
+                </p>
+              </div>
+              <div>
+                <label className="label">CPU (%)</label>
+                <input
+                  type="number"
+                  value={form.cpu}
+                  onChange={(e) => setForm({ ...form, cpu: parseInt(e.target.value) || 0 })}
+                  min={25}
+                  step={25}
+                  className="input"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Available: {user?.cpu || 0}%
+                </p>
+              </div>
+            </div>
+
+            {/* Feature limits */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="label">Databases</label>
+                <input
+                  type="number"
+                  value={form.databases}
+                  onChange={(e) => setForm({ ...form, databases: parseInt(e.target.value) || 0 })}
+                  min={0}
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="label">Backups</label>
+                <input
+                  type="number"
+                  value={form.backups}
+                  onChange={(e) => setForm({ ...form, backups: parseInt(e.target.value) || 0 })}
+                  min={0}
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="label">Allocations</label>
+                <input
+                  type="number"
+                  value={form.allocations}
+                  onChange={(e) => setForm({ ...form, allocations: parseInt(e.target.value) || 0 })}
+                  min={1}
+                  className="input"
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="label">Allocations</label>
-            <input
-              type="number"
-              value={form.allocations}
-              onChange={(e) => setForm({ ...form, allocations: parseInt(e.target.value) || 0 })}
-              min={1}
-              className="input"
-            />
-          </div>
-        </div>
+        )}
 
         {/* Submit */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-dark-700">
-          <Link to="/servers" className="btn-secondary">
-            Cancel
-          </Link>
-          <button type="submit" disabled={creating} className="btn-primary">
-            {creating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Server className="w-4 h-4" />
-                Create Server
-              </>
-            )}
-          </button>
-        </div>
+        {form.eggId && form.locationId && (
+          <div className="flex justify-end gap-3">
+            <Link to="/servers" className="btn-secondary">
+              Cancel
+            </Link>
+            <button type="submit" disabled={creating || !form.name} className="btn-primary">
+              {creating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Server className="w-4 h-4" />
+                  Create Server
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/database';
 import { requireAuth, type AuthRequest } from '../middleware/auth';
 import { asyncHandler, createError } from '../middleware/error';
+import * as pterodactyl from '../lib/pterodactyl';
 
 const router = Router();
 
@@ -112,6 +113,57 @@ router.get('/eggs', asyncHandler(async (req, res) => {
   });
 
   res.json({ eggs });
+}));
+
+// GET /api/store/eggs/:id/variables - Get egg variables from Pterodactyl
+router.get('/eggs/:id/variables', asyncHandler(async (req, res) => {
+  const egg = await prisma.egg.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!egg) {
+    throw createError('Egg not found', 404);
+  }
+
+  try {
+    // Get egg details with variables from Pterodactyl
+    const pteroEgg = await pterodactyl.getEgg(egg.nestId, egg.pterodactylId) as {
+      attributes: {
+        relationships?: {
+          variables?: {
+            data: Array<{
+              attributes: {
+                name: string;
+                description: string;
+                env_variable: string;
+                default_value: string;
+                user_viewable: boolean;
+                user_editable: boolean;
+                rules: string;
+              };
+            }>;
+          };
+        };
+      };
+    };
+
+    // Filter to only user-editable variables
+    const variables = pteroEgg.attributes?.relationships?.variables?.data
+      ?.filter(v => v.attributes.user_viewable)
+      ?.map(v => ({
+        name: v.attributes.name,
+        description: v.attributes.description,
+        envVariable: v.attributes.env_variable,
+        defaultValue: v.attributes.default_value,
+        userEditable: v.attributes.user_editable,
+        rules: v.attributes.rules,
+      })) || [];
+
+    res.json({ variables });
+  } catch (error) {
+    console.error('Failed to get egg variables:', error);
+    res.json({ variables: [] }); // Return empty if can't get from Pterodactyl
+  }
 }));
 
 export default router;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Loader2, Save, ExternalLink, Download, RefreshCw, CheckCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import { Settings, Loader2, Save, ExternalLink, Download, RefreshCw, CheckCircle, AlertCircle, Link as LinkIcon, CreditCard } from 'lucide-react';
 
 interface SettingsData {
   siteName: string;
@@ -30,6 +30,15 @@ interface SettingsData {
   earnCoins: number;
   earnCooldown: number;
   cutyApiToken: string | null;
+  // Billing settings
+  billingEnabled: boolean;
+  billingRamRate: number;
+  billingCpuRate: number;
+  billingDiskRate: number;
+  billingDatabaseRate: number;
+  billingAllocationRate: number;
+  billingBackupRate: number;
+  billingGracePeriod: number;
 }
 
 interface VersionInfo {
@@ -142,6 +151,15 @@ export default function AdminSettings() {
       earnEnabled: fd.get('earnEnabled') === 'on',
       earnCoins: parseInt(fd.get('earnCoins') as string) || 10,
       earnCooldown: parseInt(fd.get('earnCooldown') as string) || 300,
+      // Billing settings
+      billingEnabled: fd.get('billingEnabled') === 'on',
+      billingRamRate: parseFloat(fd.get('billingRamRate') as string) || 1,
+      billingCpuRate: parseFloat(fd.get('billingCpuRate') as string) || 1,
+      billingDiskRate: parseFloat(fd.get('billingDiskRate') as string) || 1,
+      billingDatabaseRate: parseFloat(fd.get('billingDatabaseRate') as string) || 1,
+      billingAllocationRate: parseFloat(fd.get('billingAllocationRate') as string) || 1,
+      billingBackupRate: parseFloat(fd.get('billingBackupRate') as string) || 1,
+      billingGracePeriod: parseInt(fd.get('billingGracePeriod') as string) || 24,
     };
 
     // Only include secrets if they were changed (not masked)
@@ -378,35 +396,35 @@ export default function AdminSettings() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="label">Coins</label>
-              <input type="number" name="defaultCoins" defaultValue={settings?.defaultCoins || 0} className="input" />
+              <input type="number" name="defaultCoins" defaultValue={settings?.defaultCoins || 0} className="input" min="0" />
             </div>
             <div>
               <label className="label">RAM (MB)</label>
-              <input type="number" name="defaultRam" defaultValue={settings?.defaultRam || 0} className="input" />
+              <input type="number" name="defaultRam" defaultValue={settings?.defaultRam || 0} className="input" min="0" />
             </div>
             <div>
               <label className="label">Disk (MB)</label>
-              <input type="number" name="defaultDisk" defaultValue={settings?.defaultDisk || 0} className="input" />
+              <input type="number" name="defaultDisk" defaultValue={settings?.defaultDisk || 0} className="input" min="0" />
             </div>
             <div>
               <label className="label">CPU (%)</label>
-              <input type="number" name="defaultCpu" defaultValue={settings?.defaultCpu || 0} className="input" />
+              <input type="number" name="defaultCpu" defaultValue={settings?.defaultCpu || 0} className="input" min="0" />
             </div>
             <div>
               <label className="label">Servers</label>
-              <input type="number" name="defaultServers" defaultValue={settings?.defaultServers || 0} className="input" />
+              <input type="number" name="defaultServers" defaultValue={settings?.defaultServers || 0} className="input" min="0" />
             </div>
             <div>
               <label className="label">Databases</label>
-              <input type="number" name="defaultDatabases" defaultValue={settings?.defaultDatabases || 0} className="input" />
+              <input type="number" name="defaultDatabases" defaultValue={settings?.defaultDatabases || 0} className="input" min="0" />
             </div>
             <div>
               <label className="label">Backups</label>
-              <input type="number" name="defaultBackups" defaultValue={settings?.defaultBackups || 0} className="input" />
+              <input type="number" name="defaultBackups" defaultValue={settings?.defaultBackups || 0} className="input" min="0" />
             </div>
             <div>
               <label className="label">Allocations</label>
-              <input type="number" name="defaultAllocations" defaultValue={settings?.defaultAllocations || 0} className="input" />
+              <input type="number" name="defaultAllocations" defaultValue={settings?.defaultAllocations || 0} className="input" min="0" />
             </div>
           </div>
         </div>
@@ -465,6 +483,111 @@ export default function AdminSettings() {
               Get your API token from <a href="https://cuty.io/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">cuty.io/dashboard</a>. 
               This is required for the earn feature to work.
             </p>
+          </div>
+        </div>
+
+        {/* Hourly Billing Settings */}
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <CreditCard className="w-5 h-5" />
+            Hourly Billing
+          </h2>
+          <p className="text-sm text-gray-400 mb-4">
+            Automatically charge users credits per hour based on their server resources. Servers will be suspended if users run out of credits after the grace period.
+          </p>
+          
+          <label className="flex items-center gap-2 mb-6">
+            <input type="checkbox" name="billingEnabled" defaultChecked={settings?.billingEnabled ?? false} className="rounded" />
+            <span className="text-sm text-gray-300">Enable Hourly Billing</span>
+          </label>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div>
+              <label className="label">RAM Rate</label>
+              <input 
+                type="number" 
+                name="billingRamRate" 
+                defaultValue={settings?.billingRamRate || 1} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Per 1GB/hour</p>
+            </div>
+            <div>
+              <label className="label">CPU Rate</label>
+              <input 
+                type="number" 
+                name="billingCpuRate" 
+                defaultValue={settings?.billingCpuRate || 1} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Per 50%/hour</p>
+            </div>
+            <div>
+              <label className="label">Disk Rate</label>
+              <input 
+                type="number" 
+                name="billingDiskRate" 
+                defaultValue={settings?.billingDiskRate || 1} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Per 5GB/hour</p>
+            </div>
+            <div>
+              <label className="label">Grace Period</label>
+              <input 
+                type="number" 
+                name="billingGracePeriod" 
+                defaultValue={settings?.billingGracePeriod || 24} 
+                className="input" 
+                min="1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Hours before suspend</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="label">Database Rate</label>
+              <input 
+                type="number" 
+                name="billingDatabaseRate" 
+                defaultValue={settings?.billingDatabaseRate || 1} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Per database/hour</p>
+            </div>
+            <div>
+              <label className="label">Allocation Rate</label>
+              <input 
+                type="number" 
+                name="billingAllocationRate" 
+                defaultValue={settings?.billingAllocationRate || 1} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Per port/hour</p>
+            </div>
+            <div>
+              <label className="label">Backup Rate</label>
+              <input 
+                type="number" 
+                name="billingBackupRate" 
+                defaultValue={settings?.billingBackupRate || 1} 
+                className="input" 
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Per backup/hour</p>
+            </div>
           </div>
         </div>
 
