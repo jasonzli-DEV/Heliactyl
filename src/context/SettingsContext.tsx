@@ -55,6 +55,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshSettings();
+    
+    // Poll for settings changes every 30 seconds to detect maintenance mode
+    const interval = setInterval(() => {
+      refreshSettings();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Update document title and favicon when settings change
