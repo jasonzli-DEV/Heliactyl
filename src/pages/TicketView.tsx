@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Loader2, Clock, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface TicketMessage {
   id: string;
@@ -155,7 +156,7 @@ export default function TicketView() {
           </span>
           {ticket.status === 'open' && (
             <button
-              onClick={closeTicket}
+              onClick={() => setShowCloseModal(true)}
               disabled={closing}
               className="btn-ghost text-red-400 hover:text-red-300"
             >
@@ -239,6 +240,18 @@ export default function TicketView() {
           </p>
         </div>
       )}
+      
+      {/* Close Ticket Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showCloseModal}
+        onClose={() => setShowCloseModal(false)}
+        onConfirm={closeTicket}
+        title="Close Ticket"
+        message="Are you sure you want to close this ticket? Once closed, you cannot reopen it or add more messages."
+        confirmText="Close Ticket"
+        confirmButtonClass="btn-danger"
+        isLoading={closing}
+      />
     </div>
   );
 }

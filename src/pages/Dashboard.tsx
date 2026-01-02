@@ -194,15 +194,15 @@ export default function Dashboard() {
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">Databases (per server)</p>
+            <p className="text-sm text-gray-400 mb-1">Databases</p>
             <p className="text-2xl font-bold text-white">{resources?.available.databases || 0}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">Backups (per server)</p>
+            <p className="text-sm text-gray-400 mb-1">Backups</p>
             <p className="text-2xl font-bold text-white">{resources?.available.backups || 0}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">Ports (per server)</p>
+            <p className="text-sm text-gray-400 mb-1">Ports</p>
             <p className="text-2xl font-bold text-white">{resources?.available.allocations || 0}</p>
           </div>
         </div>

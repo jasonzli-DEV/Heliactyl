@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
+import ConfirmModal from '../components/ConfirmModal';
 import { 
   User, 
   Key, 
@@ -203,7 +204,7 @@ export default function Account() {
           )}
 
           <button
-            onClick={resetPassword}
+            onClick={() => setShowPasswordResetModal(true)}
             disabled={loading === 'password' || !user?.pterodactylId}
             className="btn-secondary w-full"
           >
@@ -293,6 +294,21 @@ export default function Account() {
           </div>
         )}
       </div>
+      
+      {/* Password Reset Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showPasswordResetModal}
+        onClose={() => setShowPasswordResetModal(false)}
+        onConfirm={() => {
+          setShowPasswordResetModal(false);
+          resetPassword();
+        }}
+        title="Reset Pterodactyl Password"
+        message="Are you sure you want to reset your Pterodactyl panel password? You will need to use the new password to log into the panel. Your old password will no longer work."
+        confirmText="Reset Password"
+        confirmButtonClass="btn-primary"
+        isLoading={loading === 'password'}
+      />
     </div>
   );
 }

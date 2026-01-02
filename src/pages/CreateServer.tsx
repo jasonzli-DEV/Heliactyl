@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Server, Loader2, MapPin, Egg, ArrowLeft, ChevronDown, ChevronRight, Folder, Settings2 } from 'lucide-react';
+import { Server, Loader2, MapPin, Egg, ArrowLeft, ChevronDown, ChevronRight, Folder, Settings2, Cpu, HardDrive, MemoryStick, Database, Archive, Network } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Location {
@@ -375,51 +375,99 @@ export default function CreateServer() {
             </div>
 
             {/* Resources */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="space-y-6 mb-6">
               <div>
-                <label className="label">RAM (MB)</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label flex items-center gap-2">
+                    <MemoryStick className="w-4 h-4 text-green-400" />
+                    RAM
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-medium ${form.ram > (user?.ram || 0) ? 'text-red-400' : 'text-white'}`}>
+                      {(form.ram / 1024).toFixed(1)} GB
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      / {((user?.ram || 0) / 1024).toFixed(1)} GB available
+                    </span>
+                  </div>
+                </div>
                 <input
-                  type="number"
+                  type="range"
                   value={form.ram}
-                  onChange={(e) => setForm({ ...form, ram: parseInt(e.target.value) || 0 })}
-                  min={128}
-                  step={128}
-                  className="input"
-                  required
+                  onChange={(e) => setForm({ ...form, ram: parseInt(e.target.value) })}
+                  min={1024}
+                  max={user?.ram || 1024}
+                  step={1024}
+                  className="slider w-full"
+                  style={{
+                    background: `linear-gradient(to right, rgb(74, 222, 128) 0%, rgb(74, 222, 128) ${((form.ram - 1024) / ((user?.ram || 1024) - 1024)) * 100}%, rgb(31, 41, 55) ${((form.ram - 1024) / ((user?.ram || 1024) - 1024)) * 100}%, rgb(31, 41, 55) 100%)`
+                  }}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Available: {(user?.ram || 0).toLocaleString()} MB
-                </p>
+                {form.ram > (user?.ram || 0) && (
+                  <p className="text-xs text-red-400 mt-1">⚠️ Insufficient RAM available</p>
+                )}
               </div>
               <div>
-                <label className="label">Disk (MB)</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label flex items-center gap-2">
+                    <HardDrive className="w-4 h-4 text-yellow-400" />
+                    Disk
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-medium ${form.disk > (user?.disk || 0) ? 'text-red-400' : 'text-white'}`}>
+                      {(form.disk / 1024).toFixed(1)} GB
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      / {((user?.disk || 0) / 1024).toFixed(1)} GB available
+                    </span>
+                  </div>
+                </div>
                 <input
-                  type="number"
+                  type="range"
                   value={form.disk}
-                  onChange={(e) => setForm({ ...form, disk: parseInt(e.target.value) || 0 })}
-                  min={256}
-                  step={256}
-                  className="input"
-                  required
+                  onChange={(e) => setForm({ ...form, disk: parseInt(e.target.value) })}
+                  min={2048}
+                  max={user?.disk || 2048}
+                  step={1024}
+                  className="slider w-full"
+                  style={{
+                    background: `linear-gradient(to right, rgb(250, 204, 21) 0%, rgb(250, 204, 21) ${((form.disk - 2048) / ((user?.disk || 2048) - 2048)) * 100}%, rgb(31, 41, 55) ${((form.disk - 2048) / ((user?.disk || 2048) - 2048)) * 100}%, rgb(31, 41, 55) 100%)`
+                  }}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Available: {(user?.disk || 0).toLocaleString()} MB
-                </p>
+                {form.disk > (user?.disk || 0) && (
+                  <p className="text-xs text-red-400 mt-1">⚠️ Insufficient disk available</p>
+                )}
               </div>
               <div>
-                <label className="label">CPU (%)</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-red-400" />
+                    CPU
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-medium ${form.cpu > (user?.cpu || 0) ? 'text-red-400' : 'text-white'}`}>
+                      {form.cpu}%
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      / {user?.cpu || 0}% available
+                    </span>
+                  </div>
+                </div>
                 <input
-                  type="number"
+                  type="range"
                   value={form.cpu}
-                  onChange={(e) => setForm({ ...form, cpu: parseInt(e.target.value) || 0 })}
-                  min={25}
-                  step={25}
-                  className="input"
-                  required
+                  onChange={(e) => setForm({ ...form, cpu: parseInt(e.target.value) })}
+                  min={50}
+                  max={user?.cpu || 50}
+                  step={50}
+                  className="slider w-full"
+                  style={{
+                    background: `linear-gradient(to right, rgb(248, 113, 113) 0%, rgb(248, 113, 113) ${((form.cpu - 50) / ((user?.cpu || 50) - 50)) * 100}%, rgb(31, 41, 55) ${((form.cpu - 50) / ((user?.cpu || 50) - 50)) * 100}%, rgb(31, 41, 55) 100%)`
+                  }}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Available: {user?.cpu || 0}%
-                </p>
+                {form.cpu > (user?.cpu || 0) && (
+                  <p className="text-xs text-red-400 mt-1">⚠️ Insufficient CPU available</p>
+                )}
               </div>
             </div>
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins, Key, Mail, Copy, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../context/ToastContext';
 
 interface ServerData {
@@ -247,7 +248,7 @@ export default function Servers() {
                     <ExternalLink className="w-4 h-4" />
                   </a>
                   <button
-                    onClick={() => deleteServer(server.id)}
+                    onClick={() => setShowDeleteModal(server.id)}
                     disabled={deleting === server.id}
                     className="btn-ghost p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
                     title="Delete Server"
@@ -301,6 +302,18 @@ export default function Servers() {
           ))}
         </div>
       )}
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal !== null}
+        onClose={() => setShowDeleteModal(null)}
+        onConfirm={() => showDeleteModal && deleteServer(showDeleteModal)}
+        title="Delete Server"
+        message="Are you sure you want to delete this server? This action cannot be undone and all data will be permanently lost."
+        confirmText="Delete Server"
+        confirmButtonClass="btn-danger"
+        isLoading={deleting !== null}
+      />
     </div>
   );
 }

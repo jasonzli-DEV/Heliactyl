@@ -22,15 +22,25 @@ export default function AdminBilling() {
   const fetchSettings = async () => {
     try {
       const res = await fetch('/api/admin/settings', { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error('Failed to fetch settings');
+      }
       const data = await res.json();
       setSettings({
-        billingEnabled: data.settings.billingEnabled ?? false,
-        billingRamRate: data.settings.billingRamRate || 1,
-        billingCpuRate: data.settings.billingCpuRate || 1,
-        billingDiskRate: data.settings.billingDiskRate || 1,
+        billingEnabled: data.settings?.billingEnabled ?? false,
+        billingRamRate: data.settings?.billingRamRate || 1024,
+        billingCpuRate: data.settings?.billingCpuRate || 50,
+        billingDiskRate: data.settings?.billingDiskRate || 5120,
       });
     } catch (error) {
-      showToast('Failed to load settings', 'error');
+      console.error('Failed to load billing settings:', error);
+      // Set defaults if fetch fails
+      setSettings({
+        billingEnabled: false,
+        billingRamRate: 1024,
+        billingCpuRate: 50,
+        billingDiskRate: 5120,
+      });
     } finally {
       setLoading(false);
     }
