@@ -129,7 +129,15 @@ export default function Dashboard() {
       </div>
 
       {/* Low Balance Warning */}
-      {billingEnabled && servers.length > 0 && user && user.coins < 100 && (
+      {billingEnabled && servers.length > 0 && user && (() => {
+        // Calculate total hourly cost for all non-paused servers
+        const totalHourlyCost = servers
+          .filter((s: any) => !s.paused && s.hourlyCost)
+          .reduce((sum: number, s: any) => sum + s.hourlyCost, 0);
+        
+        // Only show alert if user can't afford next renewal
+        return user.coins < totalHourlyCost;
+      })() && (
         <div className="card p-4 mb-6 bg-red-500/10 border-red-500/30">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
@@ -138,7 +146,12 @@ export default function Dashboard() {
               <p className="text-sm text-gray-300">
                 {user.coins === 0 
                   ? "Your coin balance is empty! Your servers have been suspended and will be deleted in 24 hours if not funded."
-                  : `Your coin balance is running low (${user.coins} coins). Please purchase resources to avoid server suspension.`}
+                  : (() => {
+                      const totalHourlyCost = servers
+                        .filter((s: any) => !s.paused && s.hourlyCost)
+                        .reduce((sum: number, s: any) => sum + s.hourlyCost, 0);
+                      return `Your balance (${user.coins} coins) is insufficient for your next hourly renewal (${totalHourlyCost} coins). Please purchase resources to avoid server suspension.`;
+                    })()}
               </p>
               <Link to="/store" className="inline-flex items-center gap-2 mt-3 text-sm font-medium text-red-400 hover:text-red-300">
                 <ShoppingCart className="w-4 h-4" />

@@ -358,6 +358,11 @@ export default function Servers() {
                 <p className="text-xs text-gray-600">
                   Created {new Date(server.createdAt).toLocaleDateString()}
                 </p>
+                {billingEnabled && server.nextBillingAt && !server.paused && (
+                  <p className="text-xs text-amber-400 mt-1">
+                    Next renewal: {new Date(Math.round(new Date(server.nextBillingAt).getTime() / 60000) * 60000).toLocaleString()}
+                  </p>
+                )}
               </div>
             </div>
           ))}

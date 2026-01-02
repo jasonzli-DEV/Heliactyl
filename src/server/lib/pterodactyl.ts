@@ -153,17 +153,26 @@ export async function updatePteroServer(serverId: number, options: {
   backups: number;
   allocations: number;
 }) {
+  // Get current server to get allocation ID
+  const server = await pteroRequest(`/servers/${serverId}`) as any;
+  const allocationId = server.attributes?.allocation || 1;
+
   return pteroRequest(`/servers/${serverId}/build`, {
     method: 'PATCH',
     body: {
+      allocation: allocationId,
       memory: options.memory,
+      swap: 0,
       disk: options.disk,
+      io: 500,
       cpu: options.cpu,
+      threads: null,
       feature_limits: {
         databases: options.databases,
         backups: options.backups,
         allocations: options.allocations,
       },
+      oom_disabled: false,
     },
   });
 }
