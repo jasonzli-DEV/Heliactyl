@@ -41,9 +41,13 @@ function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
   const { settings, loading: settingsLoading } = useSettings();
   const { user, loading: authLoading, banned } = useAuth();
   
-  // Don't do anything during loading or if maintenance is off
-  if (settingsLoading || authLoading || !settings?.maintenanceMode) {
-    return <>{children}</>;
+  // Show loading spinner while we check settings and auth status
+  if (settingsLoading || authLoading) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-500"></div>
+      </div>
+    );
   }
 
   // Show banned page if user is banned
@@ -51,12 +55,12 @@ function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
     return <Banned />;
   }
 
-  // If maintenance mode is on and user is not an admin, show maintenance page
-  if (!user || !user.isAdmin) {
+  // If maintenance mode is ON and user is NOT an admin, show maintenance page
+  if (settings?.maintenanceMode && (!user || !user.isAdmin)) {
     return <Maintenance />;
   }
 
-  // Admin bypass - show normal app
+  // Normal operation (maintenance off OR user is admin)
   return <>{children}</>;
 }
 
