@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Loader2, Save } from 'lucide-react';
+import { CreditCard, Loader2, Save, Power, Sliders } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
 interface BillingSettings {
+  billingEnabled: boolean;
   billingRamRate: number;
   billingCpuRate: number;
   billingDiskRate: number;
+  billingDatabaseRate: number;
+  billingAllocationRate: number;
+  billingBackupRate: number;
   maxRamSlider: number;
   maxDiskSlider: number;
   maxCpuSlider: number;
@@ -29,20 +33,28 @@ export default function AdminBilling() {
       }
       const data = await res.json();
       setSettings({
-        billingRamRate: data.settings?.billingRamRate || 1024,
-        billingCpuRate: data.settings?.billingCpuRate || 50,
-        billingDiskRate: data.settings?.billingDiskRate || 5120,
-        maxRamSlider: data.settings?.maxRamSlider || 12288,
-        maxDiskSlider: data.settings?.maxDiskSlider || 51200,
-        maxCpuSlider: data.settings?.maxCpuSlider || 400,
+        billingEnabled: data.settings?.billingEnabled ?? false,
+        billingRamRate: data.settings?.billingRamRate ?? 1024,
+        billingCpuRate: data.settings?.billingCpuRate ?? 100,
+        billingDiskRate: data.settings?.billingDiskRate ?? 5120,
+        billingDatabaseRate: data.settings?.billingDatabaseRate ?? 0,
+        billingAllocationRate: data.settings?.billingAllocationRate ?? 0,
+        billingBackupRate: data.settings?.billingBackupRate ?? 0,
+        maxRamSlider: data.settings?.maxRamSlider ?? 12288,
+        maxDiskSlider: data.settings?.maxDiskSlider ?? 51200,
+        maxCpuSlider: data.settings?.maxCpuSlider ?? 400,
       });
     } catch (error) {
       console.error('Failed to load billing settings:', error);
       // Set defaults if fetch fails
       setSettings({
+        billingEnabled: false,
         billingRamRate: 1024,
-        billingCpuRate: 50,
+        billingCpuRate: 100,
         billingDiskRate: 5120,
+        billingDatabaseRate: 0,
+        billingAllocationRate: 0,
+        billingBackupRate: 0,
         maxRamSlider: 12288,
         maxDiskSlider: 51200,
         maxCpuSlider: 400,
@@ -59,12 +71,16 @@ export default function AdminBilling() {
     try {
       const formData = new FormData(e.currentTarget);
       const data = {
-        billingRamRate: parseFloat(formData.get('billingRamRate') as string) || 1024,
-        billingCpuRate: parseFloat(formData.get('billingCpuRate') as string) || 50,
-        billingDiskRate: parseFloat(formData.get('billingDiskRate') as string) || 5120,
-        maxRamSlider: (parseInt(formData.get('maxRamSlider') as string) || 12) * 1024, // Convert GB to MB
-        maxDiskSlider: (parseInt(formData.get('maxDiskSlider') as string) || 50) * 1024, // Convert GB to MB
-        maxCpuSlider: parseInt(formData.get('maxCpuSlider') as string) || 400,
+        billingEnabled: formData.get('billingEnabled') === 'on',
+        billingRamRate: Number(formData.get('billingRamRate')) || 1024,
+        billingCpuRate: Number(formData.get('billingCpuRate')) || 100,
+        billingDiskRate: Number(formData.get('billingDiskRate')) || 5120,
+        billingDatabaseRate: Number(formData.get('billingDatabaseRate')) || 0,
+        billingAllocationRate: Number(formData.get('billingAllocationRate')) || 0,
+        billingBackupRate: Number(formData.get('billingBackupRate')) || 0,
+        maxRamSlider: (Number(formData.get('maxRamSlider')) || 12) * 1024, // Convert GB to MB
+        maxDiskSlider: (Number(formData.get('maxDiskSlider')) || 50) * 1024, // Convert GB to MB
+        maxCpuSlider: Number(formData.get('maxCpuSlider')) || 400,
       };
 
       console.log('Saving billing settings:', data);
@@ -105,73 +121,114 @@ export default function AdminBilling() {
     <div className="p-6 lg:p-8 max-w-4xl mx-auto animate-fadeIn">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-2">Billing Configuration</h1>
-        <p className="text-gray-400">Configure hourly billing rates for server resources.</p>
+        <p className="text-gray-400">Configure hourly billing rates and resource limits.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Enable/Disable Billing */}
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Power className="w-5 h-5" />
+            Billing Status
+          </h2>
+          <p className="text-sm text-gray-400 mb-4">
+            When enabled, servers are billed hourly using a prepaid coin system. Users must have coins to keep servers running.
+            If they run out of coins, servers are automatically paused.
+          </p>
+          
+          <label className="flex items-center gap-3 p-4 bg-dark-700/50 rounded-lg border border-dark-600 cursor-pointer hover:border-primary/50 transition-colors">
+            <input 
+              type="checkbox" 
+              name="billingEnabled" 
+              defaultChecked={settings?.billingEnabled} 
+              className="w-5 h-5 rounded text-primary focus:ring-primary"
+            />
+            <div>
+              <span className="text-white font-medium">Enable Hourly Billing</span>
+              <p className="text-xs text-gray-400 mt-0.5">Users will be charged coins every hour for running servers</p>
+            </div>
+          </label>
+        </div>
+
+        {/* Hourly Rates */}
         <div className="card p-6">
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <CreditCard className="w-5 h-5" />
             Hourly Billing Rates
           </h2>
           <p className="text-sm text-gray-400 mb-6">
-            Set how many MB/% of resources 1 credit provides per hour. Servers consume credits hourly based on allocated resources. After running out of credits, servers are automatically suspended after 24 hours and deleted after another 24 hours.
+            Set how many resources 1 coin provides per hour. Lower values = more expensive.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="label">RAM per Credit</label>
+              <label className="label">RAM per Coin (MB)</label>
               <input 
                 type="number" 
                 name="billingRamRate" 
-                defaultValue={settings?.billingRamRate || 1024} 
+                defaultValue={settings?.billingRamRate ?? 1024} 
                 className="input" 
                 min="1"
-                step="1"
+                step="128"
               />
-              <p className="text-xs text-gray-500 mt-1">MB of RAM per credit/hour</p>
-              <p className="text-xs text-blue-400 mt-1">Example: 1024 = 1 credit gives 1GB RAM for 1 hour</p>
+              <p className="text-xs text-gray-500 mt-1">MB of RAM per coin/hour</p>
+              <p className="text-xs text-blue-400 mt-1">1024 = 1GB costs 1 coin/hr</p>
             </div>
             <div>
-              <label className="label">CPU per Credit</label>
+              <label className="label">CPU per Coin (%)</label>
               <input 
                 type="number" 
                 name="billingCpuRate" 
-                defaultValue={settings?.billingCpuRate || 50} 
+                defaultValue={settings?.billingCpuRate ?? 100} 
                 className="input" 
                 min="1"
-                step="1"
+                step="10"
               />
-              <p className="text-xs text-gray-500 mt-1">% CPU per credit/hour</p>
-              <p className="text-xs text-blue-400 mt-1">Example: 50 = 1 credit gives 50% CPU for 1 hour</p>
+              <p className="text-xs text-gray-500 mt-1">% CPU per coin/hour</p>
+              <p className="text-xs text-blue-400 mt-1">100 = 100% CPU costs 1 coin/hr</p>
             </div>
             <div>
-              <label className="label">Disk per Credit</label>
+              <label className="label">Disk per Coin (MB)</label>
               <input 
                 type="number" 
                 name="billingDiskRate" 
-                defaultValue={settings?.billingDiskRate || 5120} 
+                defaultValue={settings?.billingDiskRate ?? 5120} 
                 className="input" 
                 min="1"
-                step="1"
+                step="512"
               />
-              <p className="text-xs text-gray-500 mt-1">MB of disk per credit/hour</p>
-              <p className="text-xs text-blue-400 mt-1">Example: 5120 = 1 credit gives 5GB disk for 1 hour</p>
+              <p className="text-xs text-gray-500 mt-1">MB of disk per coin/hour</p>
+              <p className="text-xs text-blue-400 mt-1">5120 = 5GB costs 1 coin/hr</p>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
+          <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
+            <h3 className="text-sm font-medium text-blue-300 mb-2">Cost Example</h3>
+            <p className="text-xs text-gray-400">
+              A server with 2GB RAM, 100% CPU, 10GB disk would cost:{' '}
+              <code className="text-blue-400">
+                ({2048}/{settings?.billingRamRate ?? 1024}) + ({100}/{settings?.billingCpuRate ?? 100}) + ({10240}/{settings?.billingDiskRate ?? 5120}) = {
+                  Math.ceil((2048/(settings?.billingRamRate ?? 1024)) + (100/(settings?.billingCpuRate ?? 100)) + (10240/(settings?.billingDiskRate ?? 5120)))
+                } coins/hour
+              </code>
+            </p>
+          </div>
+
+          <div className="mt-4 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
             <p className="text-sm text-yellow-400">
-              <strong>Note:</strong> Server slots, databases, backups, and allocations are <strong>permanent purchases</strong> from the store and are NOT billed hourly. Only RAM, CPU, and Disk resources consume credits while servers are running.
+              <strong>Note:</strong> Databases, backups, and extra ports are <strong>permanent purchases</strong> from the store and are NOT billed hourly.
             </p>
           </div>
         </div>
 
         {/* Max Slider Configuration */}
         <div className="card p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Slider Maximums</h2>
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Sliders className="w-5 h-5" />
+            Slider Maximums
+          </h2>
           <p className="text-sm text-gray-400 mb-4">
-            Set maximum values for resource sliders when creating servers. Users can allocate up to these amounts.
+            Maximum values for resource sliders when creating servers. Users can allocate up to these amounts (if they have enough coins).
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -180,36 +237,36 @@ export default function AdminBilling() {
               <input 
                 type="number" 
                 name="maxRamSlider" 
-                defaultValue={Math.round((settings?.maxRamSlider || 12288) / 1024)} 
+                defaultValue={Math.round((settings?.maxRamSlider ?? 12288) / 1024)} 
                 className="input" 
                 min="1"
                 step="1"
               />
-              <p className="text-xs text-gray-500 mt-1">Maximum GB users can allocate</p>
+              <p className="text-xs text-gray-500 mt-1">Maximum RAM users can allocate</p>
             </div>
             <div>
               <label className="label">Max Disk (GB)</label>
               <input 
                 type="number" 
                 name="maxDiskSlider" 
-                defaultValue={Math.round((settings?.maxDiskSlider || 51200) / 1024)} 
+                defaultValue={Math.round((settings?.maxDiskSlider ?? 51200) / 1024)} 
                 className="input" 
                 min="1"
                 step="1"
               />
-              <p className="text-xs text-gray-500 mt-1">Maximum GB users can allocate</p>
+              <p className="text-xs text-gray-500 mt-1">Maximum disk users can allocate</p>
             </div>
             <div>
               <label className="label">Max CPU (%)</label>
               <input 
                 type="number" 
                 name="maxCpuSlider" 
-                defaultValue={settings?.maxCpuSlider || 400} 
+                defaultValue={settings?.maxCpuSlider ?? 400} 
                 className="input" 
                 min="50"
                 step="50"
               />
-              <p className="text-xs text-gray-500 mt-1">Maximum % users can allocate</p>
+              <p className="text-xs text-gray-500 mt-1">Maximum CPU % users can allocate</p>
             </div>
           </div>
         </div>
