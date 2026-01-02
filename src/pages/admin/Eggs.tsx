@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Egg, Plus, Edit, Trash2, Loader2, RefreshCw, ChevronDown, ChevronRight, Folder } from 'lucide-react';
+import { Egg, Plus, Edit, Trash2, Loader2, RefreshCw, ChevronDown, ChevronRight, Folder, Eye, EyeOff } from 'lucide-react';
 
 interface EggData {
   id: string;
   name: string;
   description: string | null;
   nestId: number;
+  nestName: string;
+  nestEnabled: boolean;
   pterodactylId: number;
   dockerImage: string;
   startup: string;
@@ -134,6 +136,23 @@ export default function AdminEggs() {
     }
   };
 
+  const toggleNestEnabled = async (nestId: number, enabled: boolean) => {
+    if (!confirm(`${enabled ? 'Enable' : 'Disable'} all eggs in this nest?`)) return;
+    try {
+      const res = await fetch('/api/admin/eggs/nest-toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ nestId, enabled }),
+      });
+      if (res.ok) {
+        fetchEggs();
+      }
+    } catch (error) {
+      console.error('Failed to toggle nest:', error);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fadeIn">
       <div className="flex items-center justify-between mb-8">
@@ -171,29 +190,46 @@ export default function AdminEggs() {
         </div>
       ) : (
         <div className="space-y-4">
-          {nestGroups.map(([nestId, nestEggs]) => (
+          {nestGroups.map(([nestId, nestEggs]) => {
+            const nestName = nestEggs[0]?.nestName || `Nest #${nestId}`;
+            const nestEnabled = nestEggs[0]?.nestEnabled ?? true;
+            return (
             <div key={nestId} className="card overflow-hidden">
               {/* Nest Header */}
-              <button
-                onClick={() => toggleNest(nestId)}
-                className="w-full flex items-center justify-between p-4 bg-dark-700/50 hover:bg-dark-700 transition-colors"
-              >
-                <div className="flex items-center gap-3">
+              <div className="w-full flex items-center justify-between p-4 bg-dark-700/50">
+                <button
+                  onClick={() => toggleNest(nestId)}
+                  className="flex items-center gap-3 flex-1"
+                >
                   {expandedNests.has(nestId) ? (
                     <ChevronDown className="w-5 h-5 text-gray-400" />
                   ) : (
                     <ChevronRight className="w-5 h-5 text-gray-400" />
                   )}
                   <Folder className="w-5 h-5 text-accent-400" />
-                  <span className="font-semibold text-white">Nest #{nestId}</span>
+                  <span className="font-semibold text-white">{nestName}</span>
                   <span className="text-sm text-gray-500">({nestEggs.length} eggs)</span>
-                </div>
-                <div className="flex items-center gap-2">
                   <span className={`text-xs ${nestEggs.every(e => e.enabled) ? 'text-green-400' : nestEggs.some(e => e.enabled) ? 'text-yellow-400' : 'text-gray-500'}`}>
                     {nestEggs.filter(e => e.enabled).length} / {nestEggs.length} enabled
                   </span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleNestEnabled(nestId, !nestEnabled);
+                    }}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      nestEnabled 
+                        ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                        : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                    }`}
+                  >
+                    {nestEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    {nestEnabled ? 'Enabled' : 'Disabled'}
+                  </button>
                 </div>
-              </button>
+              </div>
               
               {/* Eggs Table */}
               {expandedNests.has(nestId) && (
@@ -239,7 +275,8 @@ export default function AdminEggs() {
                 </table>
               )}
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 

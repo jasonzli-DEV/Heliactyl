@@ -248,6 +248,8 @@ model Egg {
   id              String    @id @default(uuid())
   pterodactylId   Int
   nestId          Int
+  nestName        String    @default("Unknown")
+  nestEnabled     Boolean   @default(true)
   name            String
   displayName     String
   description     String?

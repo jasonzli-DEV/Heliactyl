@@ -136,8 +136,8 @@ export default function Earn() {
     <div className="p-6 lg:p-8 max-w-2xl mx-auto animate-fadeIn">
       {/* Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-white mb-2">Earn Coins</h1>
-        <p className="text-gray-400">Complete a short link to earn free coins!</p>
+        <h1 className="text-2xl font-bold text-white mb-2">Earn Free Coins</h1>
+        <p className="text-gray-400">Complete short links to earn coins for server hosting!</p>
       </div>
 
       {/* Balance Card */}
@@ -151,6 +151,11 @@ export default function Earn() {
             <p className="text-3xl font-bold text-white">{user?.coins?.toLocaleString() || 0}</p>
             <p className="text-xs text-gray-500">coins</p>
           </div>
+        </div>
+        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center">
+          <p className="text-xs text-blue-400">
+            💡 Servers cost coins per hour while running. Keep earning to keep your servers online!
+          </p>
         </div>
       </div>
 

@@ -110,11 +110,11 @@ export default function Dashboard() {
           Welcome back, {user?.username}!
         </h1>
         <p className="text-gray-400">
-          Manage your servers and resources from here.
+          Monitor your servers and billing from here.
         </p>
       </div>
 
-      {/* Coins card */}
+      {/* Coins card with billing info */}
       <div className="card p-6 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -122,61 +122,50 @@ export default function Dashboard() {
               <Coins className="w-6 h-6 text-accent-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Available Coins</p>
+              <p className="text-sm text-gray-400">Account Balance</p>
               <p className="text-2xl font-bold text-white">
-                {user?.coins?.toLocaleString() || 0}
+                {user?.coins?.toLocaleString() || 0} coins
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Servers are billed hourly while running
               </p>
             </div>
           </div>
-          <Link to="/store" className="btn-primary">
-            <ShoppingCart className="w-4 h-4" />
-            Buy Resources
-          </Link>
+          <div className="flex gap-3">
+            <Link to="/earn" className="btn-secondary">
+              <Ticket className="w-4 h-4" />
+              Earn Coins
+            </Link>
+            <Link to="/store" className="btn-primary">
+              <ShoppingCart className="w-4 h-4" />
+              Buy Coins
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Resource cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {loading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="card p-6">
-                <div className="skeleton h-4 w-20 mb-3" />
-                <div className="skeleton h-8 w-32 mb-3" />
-                <div className="skeleton h-2 w-full" />
-              </div>
-            ))
-          : resourceCards.map(({ label, icon: Icon, used, total, unit, color, bgColor }) => {
-              const percentage = total > 0 ? Math.round((used / total) * 100) : 0;
-              return (
-                <div key={label} className="card p-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`p-2 rounded-lg ${bgColor}`}>
-                      <Icon className={`w-5 h-5 ${color}`} />
-                    </div>
-                    <span className="text-sm font-medium text-gray-400">{label}</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white mb-3">
-                    {used.toLocaleString()}
-                    <span className="text-gray-500 text-base font-normal">
-                      {' '}
-                      / {total.toLocaleString()} {unit || ''}
-                    </span>
-                  </p>
-                  <div className="h-2 bg-dark-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${
-                        percentage >= 90
-                          ? 'bg-red-500'
-                          : percentage >= 70
-                          ? 'bg-yellow-500'
-                          : 'bg-accent-500'
-                      }`}
-                      style={{ width: `${Math.min(percentage, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+      {/* Server limits info */}
+      <div className="card p-6 mb-8">
+        <h2 className="text-lg font-semibold text-white mb-4">Server Limits</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <p className="text-sm text-gray-400 mb-1">Active Servers</p>
+            <p className="text-2xl font-bold text-white">
+              {resources?.used.servers || 0}
+              <span className="text-gray-500 text-base font-normal">
+                {' '}/ {resources?.available.servers || 0}
+              </span>
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-400 mb-1">Max Databases per Server</p>
+            <p className="text-2xl font-bold text-white">{resources?.available.databases || 0}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-400 mb-1">Max Backups per Server</p>
+            <p className="text-2xl font-bold text-white">{resources?.available.backups || 0}</p>
+          </div>
+        </div>
       </div>
 
       {/* Quick actions */}
@@ -206,8 +195,8 @@ export default function Dashboard() {
               <ShoppingCart className="w-5 h-5 text-purple-400" />
             </div>
             <div>
-              <p className="font-medium text-white">Store</p>
-              <p className="text-sm text-gray-500">Buy more resources</p>
+              <p className="font-medium text-white">Buy Coins</p>
+              <p className="text-sm text-gray-500">Top up balance</p>
             </div>
           </Link>
           <Link to="/redeem" className="card-hover p-4 flex items-center gap-3">
@@ -216,7 +205,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="font-medium text-white">Redeem Code</p>
-              <p className="text-sm text-gray-500">Use a coupon code</p>
+              <p className="text-sm text-gray-500">Use coupon codes</p>
             </div>
           </Link>
         </div>

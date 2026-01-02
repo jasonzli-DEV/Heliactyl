@@ -168,16 +168,20 @@ export default function Servers() {
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
+              {billingEnabled && server.hourlyCost !== undefined && server.hourlyCost > 0 && (
+                <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-amber-400" />
+                    <span className="text-sm font-medium text-amber-400">Hourly Cost</span>
+                  </div>
+                  <span className="text-lg font-bold text-white">{server.hourlyCost} coins/hr</span>
+                </div>
+              )}
+
+              <div className="mt-3">
                 <p className="text-xs text-gray-600">
                   Created {new Date(server.createdAt).toLocaleDateString()}
                 </p>
-                {billingEnabled && server.hourlyCost !== undefined && server.hourlyCost > 0 && (
-                  <div className="flex items-center gap-1 text-xs text-amber-400">
-                    <Coins className="w-3 h-3" />
-                    <span>{server.hourlyCost}/hr</span>
-                  </div>
-                )}
               </div>
             </div>
           ))}

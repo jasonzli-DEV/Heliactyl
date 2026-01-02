@@ -47,7 +47,7 @@ export default function AdminCoupons() {
     try {
       const isNew = !coupon.id;
       const res = await fetch(isNew ? '/api/admin/coupons' : `/api/admin/coupons/${coupon.id}`, {
-        method: isNew ? 'POST' : 'PATCH',
+        method: isNew ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(coupon),
@@ -124,7 +124,7 @@ export default function AdminCoupons() {
                     {coupon.servers > 0 && <span>+{coupon.servers} servers </span>}
                   </td>
                   <td>
-                    {coupon.usedCount}
+                    {coupon._count?.uses || 0}
                     {coupon.maxUses ? ` / ${coupon.maxUses}` : ' / ∞'}
                   </td>
                   <td>

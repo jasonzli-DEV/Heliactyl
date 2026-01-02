@@ -237,6 +237,10 @@ export async function getNests() {
   return pteroRequest('/nests');
 }
 
+export async function getNest(nestId: number) {
+  return pteroRequest(`/nests/${nestId}`);
+}
+
 export async function getEggs(nestId: number) {
   return pteroRequest(`/nests/${nestId}/eggs`);
 }

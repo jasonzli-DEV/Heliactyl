@@ -206,15 +206,16 @@ router.get('/eggs', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 router.post('/eggs/sync', asyncHandler(async (req: AuthRequest, res) => {
-  const nests = await pterodactyl.getNests() as { data: Array<{ attributes: { id: number } }> };
+  const nests = await pterodactyl.getNests() as { data: Array<{ attributes: { id: number; name: string } }> };
   let syncedCount = 0;
   for (const nest of nests.data) {
+    const nestName = nest.attributes.name || `Nest #${nest.attributes.id}`;
     const eggs = await pterodactyl.getEggs(nest.attributes.id) as { data: Array<{ attributes: { id: number; name: string; description: string; docker_image: string; startup: string } }> };
     for (const egg of eggs.data) {
       await prisma.egg.upsert({
         where: { pterodactylId_nestId: { pterodactylId: egg.attributes.id, nestId: nest.attributes.id } },
-        update: { name: egg.attributes.name, displayName: egg.attributes.name, dockerImage: egg.attributes.docker_image || '', startup: egg.attributes.startup || '' },
-        create: { pterodactylId: egg.attributes.id, nestId: nest.attributes.id, name: egg.attributes.name, displayName: egg.attributes.name, dockerImage: egg.attributes.docker_image || '', startup: egg.attributes.startup || '', enabled: true },
+        update: { name: egg.attributes.name, displayName: egg.attributes.name, nestName, dockerImage: egg.attributes.docker_image || '', startup: egg.attributes.startup || '' },
+        create: { pterodactylId: egg.attributes.id, nestId: nest.attributes.id, nestName, name: egg.attributes.name, displayName: egg.attributes.name, dockerImage: egg.attributes.docker_image || '', startup: egg.attributes.startup || '', enabled: true },
       });
       syncedCount++;
     }
@@ -226,6 +227,15 @@ router.post('/eggs/sync', asyncHandler(async (req: AuthRequest, res) => {
 router.put('/eggs/:id', asyncHandler(async (req: AuthRequest, res) => {
   const egg = await prisma.egg.update({ where: { id: req.params.id }, data: req.body });
   res.json({ egg });
+}));
+
+router.post('/eggs/nest-toggle', asyncHandler(async (req: AuthRequest, res) => {
+  const { nestId, enabled } = req.body;
+  await prisma.egg.updateMany({
+    where: { nestId: parseInt(nestId) },
+    data: { enabled, nestEnabled: enabled },
+  });
+  res.json({ success: true });
 }));
 
 // Coupons

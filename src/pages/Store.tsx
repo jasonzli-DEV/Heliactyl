@@ -80,13 +80,18 @@ export default function Store() {
     <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fadeIn">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Resource Store</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">Coin Store</h1>
         <p className="text-gray-400">
-          Purchase additional resources for your servers.
+          Purchase coins to pay for server hosting.
           <span className="ml-2 text-accent-400">
             Balance: {user?.coins?.toLocaleString() || 0} coins
           </span>
         </p>
+        <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <p className="text-sm text-blue-400">
+            💡 Servers are billed hourly while running. Costs depend on RAM, Disk, and CPU allocated.
+          </p>
+        </div>
       </div>
 
       {error && (
