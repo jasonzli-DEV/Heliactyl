@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { Server, Cpu, HardDrive, MemoryStick, Database, Archive, Network, Coins, Plus } from 'lucide-react';
+import { Server, Cpu, HardDrive, MemoryStick, Database, Archive, Network, Coins, Plus, ShoppingCart, Ticket } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
@@ -249,5 +249,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-import { ShoppingCart, Ticket } from 'lucide-react';

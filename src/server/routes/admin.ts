@@ -45,11 +45,35 @@ router.get('/users', asyncHandler(async (req: AuthRequest, res) => {
   });
 }));
 
-// PUT /api/admin/users/:id
+// PUT /api/admin/users/:id - Whitelist allowed fields to prevent mass assignment
 router.put('/users/:id', asyncHandler(async (req: AuthRequest, res) => {
+  // Whitelist allowed fields to prevent privilege escalation
+  const allowedFields = ['username', 'coins', 'ram', 'disk', 'cpu', 'servers', 'databases', 'backups', 'allocations', 'banned', 'banReason', 'packageId'] as const;
+  const updates: Record<string, unknown> = {};
+  
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  }
+  
+  // Handle isAdmin separately with extra logging
+  if (req.body.isAdmin !== undefined) {
+    updates.isAdmin = req.body.isAdmin;
+    // Log admin status change
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user!.id,
+        action: req.body.isAdmin ? 'ADMIN_GRANTED' : 'ADMIN_REVOKED',
+        details: JSON.stringify({ targetUserId: req.params.id }),
+        ipAddress: req.ip || 'unknown',
+      },
+    });
+  }
+  
   const user = await prisma.user.update({
     where: { id: req.params.id },
-    data: req.body,
+    data: updates,
   });
   res.json({ user });
 }));

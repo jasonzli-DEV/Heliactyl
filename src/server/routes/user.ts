@@ -259,20 +259,49 @@ router.post('/afk/claim', asyncHandler(async (req: AuthRequest, res) => {
     throw createError('Invalid minutes', 400);
   }
 
+  // Get user's last AFK claim time
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    select: { lastAfkClaim: true },
+  });
+
+  if (!user) {
+    throw createError('User not found', 404);
+  }
+
   // Get AFK settings
   const afkSetting = await prisma.settings.findFirst();
   const coinsPerMinute = afkSetting?.afkCoinsPerMinute || 1;
   const maxMinutes = afkSetting?.afkMaxMinutes || 60;
+  const afkInterval = afkSetting?.afkInterval || 60; // seconds between claims
+
+  // Server-side rate limiting: Check if enough time has passed since last claim
+  if (user.lastAfkClaim) {
+    const timeSinceLastClaim = Date.now() - user.lastAfkClaim.getTime();
+    const minTimeBetweenClaims = afkInterval * 1000; // Convert to milliseconds
+    
+    if (timeSinceLastClaim < minTimeBetweenClaims) {
+      const secondsRemaining = Math.ceil((minTimeBetweenClaims - timeSinceLastClaim) / 1000);
+      throw createError(`Please wait ${secondsRemaining} seconds before claiming again`, 429);
+    }
+    
+    // Calculate actual minutes that could have passed (with some buffer)
+    const actualMinutesPossible = Math.floor(timeSinceLastClaim / 60000) + 1;
+    if (minutes > actualMinutesPossible + 5) { // Allow 5 minute grace for page load delays
+      throw createError('Invalid claim: minutes exceed time since last claim', 400);
+    }
+  }
 
   // Cap minutes at max
   const clampedMinutes = Math.min(minutes, maxMinutes);
   const coinsEarned = Math.floor(clampedMinutes * coinsPerMinute);
 
-  // Update user coins
+  // Update user coins and last claim time
   await prisma.user.update({
     where: { id: req.user!.id },
     data: {
       coins: { increment: coinsEarned },
+      lastAfkClaim: new Date(),
     },
   });
 
@@ -303,48 +332,8 @@ router.post('/afk/claim', asyncHandler(async (req: AuthRequest, res) => {
   });
 }));
 
-// POST /api/user/earn/claim - Claim coins from earn links (Cuty.io style)
-router.post('/earn/claim', asyncHandler(async (req: AuthRequest, res) => {
-  const { linkId, coins } = req.body;
-
-  if (!linkId || typeof coins !== 'number' || coins <= 0) {
-    throw createError('Invalid request', 400);
-  }
-
-  // Cap coins to prevent abuse (max 100 per claim)
-  const clampedCoins = Math.min(coins, 100);
-
-  // Give coins to user
-  await prisma.user.update({
-    where: { id: req.user!.id },
-    data: { coins: { increment: clampedCoins } },
-  });
-
-  // Create transaction
-  await prisma.transaction.create({
-    data: {
-      userId: req.user!.id,
-      type: 'EARN',
-      amount: clampedCoins,
-      description: `Earned from link: ${linkId}`,
-    },
-  });
-
-  // Log action
-  await prisma.auditLog.create({
-    data: {
-      userId: req.user!.id,
-      action: 'EARN_CLAIM',
-      details: JSON.stringify({ linkId, coins: clampedCoins }),
-      ipAddress: req.ip || 'unknown',
-    },
-  });
-
-  res.json({
-    success: true,
-    coins: clampedCoins,
-  });
-}));
+// NOTE: The /api/user/earn/claim endpoint has been removed for security.
+// All earn claims must go through the token-based /api/earn/claim endpoint.
 
 // DELETE /api/user/account - Delete user account
 router.delete('/account', asyncHandler(async (req: AuthRequest, res) => {

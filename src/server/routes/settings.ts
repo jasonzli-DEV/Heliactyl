@@ -88,9 +88,27 @@ router.get('/full', requireAdmin, asyncHandler(async (req: AuthRequest, res) => 
   });
 }));
 
+// Allowed settings fields (whitelist to prevent overwriting secrets like jwtSecret)
+const ALLOWED_SETTINGS_FIELDS = [
+  'siteName', 'siteDescription', 'logo', 'favicon', 'theme', 'accentColor', 'siteUrl',
+  'pterodactylUrl', 'pterodactylKey',
+  'discordClientId', 'discordClientSecret', 'discordRedirectUri', 'discordInvite', 'adminDiscordIds',
+  'allowNewUsers', 'maintenanceMode', 'maintenanceMessage',
+  'defaultRam', 'defaultDisk', 'defaultCpu', 'defaultServers', 'defaultDatabases', 'defaultBackups', 'defaultAllocations', 'defaultCoins',
+  'afkEnabled', 'afkCoinsPerMinute', 'afkMaxMinutes', 'afkInterval',
+  'storeEnabled', 'earnEnabled', 'earnLinks', 'cutyApiToken',
+] as const;
+
 // PATCH /api/settings - Update settings (admin only)
 router.patch('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
-  const updates = req.body;
+  // Whitelist allowed fields to prevent privilege escalation
+  const updates: Record<string, unknown> = {};
+  
+  for (const field of ALLOWED_SETTINGS_FIELDS) {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  }
 
   // Don't update secrets if they're masked
   if (updates.pterodactylKey === '••••••••') {
@@ -134,7 +152,14 @@ router.patch('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
 
 // PUT /api/settings - Update settings (admin only)
 router.put('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
-  const updates = req.body;
+  // Whitelist allowed fields to prevent privilege escalation
+  const updates: Record<string, unknown> = {};
+  
+  for (const field of ALLOWED_SETTINGS_FIELDS) {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  }
 
   // Don't update secrets if they're masked
   if (updates.pterodactylKey === '••••••••') {
