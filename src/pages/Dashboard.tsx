@@ -223,6 +223,76 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Resource usage indicators (RAM, CPU, Disk) */}
+      <div className="card p-6 mb-8">
+        <h2 className="text-lg font-semibold text-white mb-4">Hourly Billed Resources</h2>
+        <p className="text-sm text-gray-400 mb-4">These resources consume coins while servers are running.</p>
+        <div className="space-y-6">
+          {/* RAM Usage */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <MemoryStick className="w-4 h-4 text-green-400" />
+                <span className="text-sm font-medium text-white">RAM</span>
+              </div>
+              <span className="text-sm text-gray-400">
+                {((resources?.used.ram || 0) / 1024).toFixed(1)} GB / {((resources?.available.ram || 1024) / 1024).toFixed(1)} GB
+              </span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-green-500 h-full transition-all duration-500 rounded-full"
+                style={{ 
+                  width: `${Math.min(100, ((resources?.used.ram || 0) / (resources?.available.ram || 1024)) * 100)}%` 
+                }}
+              />
+            </div>
+          </div>
+
+          {/* CPU Usage */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-red-400" />
+                <span className="text-sm font-medium text-white">CPU</span>
+              </div>
+              <span className="text-sm text-gray-400">
+                {resources?.used.cpu || 0}% / {resources?.available.cpu || 100}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-red-500 h-full transition-all duration-500 rounded-full"
+                style={{ 
+                  width: `${Math.min(100, ((resources?.used.cpu || 0) / (resources?.available.cpu || 100)) * 100)}%` 
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Disk Usage */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <HardDrive className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm font-medium text-white">Disk</span>
+              </div>
+              <span className="text-sm text-gray-400">
+                {((resources?.used.disk || 0) / 1024).toFixed(1)} GB / {((resources?.available.disk || 5120) / 1024).toFixed(1)} GB
+              </span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-yellow-500 h-full transition-all duration-500 rounded-full"
+                style={{ 
+                  width: `${Math.min(100, ((resources?.used.disk || 0) / (resources?.available.disk || 5120)) * 100)}%` 
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Quick actions */}
       <div className="card p-6">
         <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>

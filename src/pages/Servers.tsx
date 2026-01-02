@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins, Key, Mail, Copy, CheckCircle, Edit } from 'lucide-react';
+import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins, Key, Mail, Copy, CheckCircle, Edit, Pause, Play } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
@@ -18,6 +18,8 @@ interface ServerData {
   backups: number;
   allocations: number;
   hourlyCost?: number;
+  paused?: boolean;
+  nextBillingAt?: string;
   location: {
     name: string;
     description: string | null;
@@ -35,6 +37,7 @@ export default function Servers() {
   const [servers, setServers] = useState<ServerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [pausing, setPausing] = useState<string | null>(null);
   const [billingEnabled, setBillingEnabled] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState<string | null>(null);
@@ -111,6 +114,31 @@ export default function Servers() {
       setCopied(true);
       showToast('Password copied to clipboard!', 'success');
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const togglePauseServer = async (serverId: string, currentlyPaused: boolean) => {
+    setPausing(serverId);
+    try {
+      const action = currentlyPaused ? 'unpause' : 'pause';
+      const res = await fetch(`/api/servers/${serverId}/${action}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(data.message || `Server ${action}d successfully`, 'success');
+        await fetchServers();
+      } else {
+        showToast(data.error || `Failed to ${action} server`, 'error');
+      }
+    } catch (error) {
+      console.error('Failed to toggle pause server:', error);
+      showToast('Failed to toggle pause state', 'error');
+    } finally {
+      setPausing(null);
     }
   };
 
@@ -233,7 +261,14 @@ export default function Servers() {
             <div key={server.id} className="card p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">{server.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-white">{server.name}</h3>
+                    {server.paused && (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-yellow-500/20 text-yellow-400 rounded-full">
+                        Paused
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500">
                     {server.egg?.name} • {server.location?.name}
                   </p>
@@ -246,6 +281,24 @@ export default function Servers() {
                   >
                     <Edit className="w-4 h-4" />
                   </Link>
+                  <button
+                    onClick={() => togglePauseServer(server.id, server.paused || false)}
+                    disabled={pausing === server.id}
+                    className={`btn-ghost p-2 ${
+                      server.paused 
+                        ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10' 
+                        : 'text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10'
+                    }`}
+                    title={server.paused ? 'Unpause (charge 1 hour upfront)' : 'Pause (stop billing)'}
+                  >
+                    {pausing === server.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : server.paused ? (
+                      <Play className="w-4 h-4" />
+                    ) : (
+                      <Pause className="w-4 h-4" />
+                    )}
+                  </button>
                   <a
                     href={`https://panel.enderbit.com/server/${server.pterodactylUuid}`}
                     target="_blank"

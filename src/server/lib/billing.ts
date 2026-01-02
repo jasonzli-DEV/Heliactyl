@@ -2,9 +2,9 @@ import { prisma } from './database';
 import * as pterodactyl from './pterodactyl';
 
 interface BillingRates {
-  ramRate: number;      // Credits per hour per 1024MB RAM
-  cpuRate: number;      // Credits per hour per 50% CPU
-  diskRate: number;     // Credits per hour per 5120MB disk
+  ramRate: number;      // MB of RAM per credit/hour
+  cpuRate: number;      // % CPU per credit/hour
+  diskRate: number;     // MB of disk per credit/hour
   databaseRate: number; // Credits per hour per database
   allocationRate: number; // Credits per hour per allocation
   backupRate: number;   // Credits per hour per backup
@@ -21,21 +21,21 @@ export function calculateHourlyCost(
   backups: number,
   rates: BillingRates
 ): number {
-  // RAM: 1 credit per 1GB (1024MB)
-  const ramCost = (ram / 1024) * rates.ramRate;
+  // RAM: MB / (MB per credit) = credits needed
+  const ramCost = ram / rates.ramRate;
   
-  // CPU: 1 credit per 50%
-  const cpuCost = (cpu / 50) * rates.cpuRate;
+  // CPU: % / (% per credit) = credits needed
+  const cpuCost = cpu / rates.cpuRate;
   
-  // Disk: 1 credit per 5GB (5120MB)
-  const diskCost = (disk / 5120) * rates.diskRate;
+  // Disk: MB / (MB per credit) = credits needed
+  const diskCost = disk / rates.diskRate;
   
   // Databases, allocations, and backups are now permanent resources (not billed hourly)
   
   return ramCost + cpuCost + diskCost;
 }
 
-// Process billing for all servers
+// Process billing for all servers (Prepaid System)
 export async function processBilling() {
   const settings = await prisma.settings.findFirst();
   
@@ -45,9 +45,9 @@ export async function processBilling() {
   }
   
   const rates: BillingRates = {
-    ramRate: settings.billingRamRate || 1,
-    cpuRate: settings.billingCpuRate || 1,
-    diskRate: settings.billingDiskRate || 1,
+    ramRate: settings.billingRamRate || 1024,
+    cpuRate: settings.billingCpuRate || 50,
+    diskRate: settings.billingDiskRate || 5120,
     databaseRate: settings.billingDatabaseRate || 1,
     allocationRate: settings.billingAllocationRate || 1,
     backupRate: settings.billingBackupRate || 1,
@@ -56,25 +56,23 @@ export async function processBilling() {
   
   const now = new Date();
   
-  // Get all non-suspended servers
+  // Get all non-paused, non-suspended servers with expired prepaid hours
   const servers = await prisma.server.findMany({
-    where: { suspended: false },
+    where: { 
+      suspended: false,
+      paused: false,
+      nextBillingAt: {
+        lte: now, // Prepaid hour has expired
+      },
+    },
     include: { user: true },
   });
   
-  console.log(`[Billing] Processing ${servers.length} servers`);
+  console.log(`[Billing] Processing ${servers.length} servers with expired prepaid hours`);
   
   for (const server of servers) {
     try {
-      // Calculate hours since last billing
-      const lastBilled = new Date(server.lastBilledAt);
-      const hoursSinceLastBill = Math.floor((now.getTime() - lastBilled.getTime()) / (1000 * 60 * 60));
-      
-      if (hoursSinceLastBill < 1) {
-        continue; // Less than 1 hour since last bill
-      }
-      
-      // Calculate cost for this billing period
+      // Calculate cost for next hour
       const hourlyCost = calculateHourlyCost(
         server.ram,
         server.cpu,
@@ -85,20 +83,23 @@ export async function processBilling() {
         rates
       );
       
-      const totalCost = Math.ceil(hourlyCost * hoursSinceLastBill);
+      const costForNextHour = Math.ceil(hourlyCost);
       
-      // Check if user has enough coins
-      if (server.user.coins >= totalCost) {
-        // Deduct coins and update last billed time
+      // Check if user has enough coins for next hour
+      if (server.user.coins >= costForNextHour) {
+        // Charge user for next hour and extend nextBillingAt
+        const nextBilling = new Date(now.getTime() + 60 * 60 * 1000); // +1 hour
+        
         await prisma.$transaction([
           prisma.user.update({
             where: { id: server.userId },
-            data: { coins: { decrement: totalCost } },
+            data: { coins: { decrement: costForNextHour } },
           }),
           prisma.server.update({
             where: { id: server.id },
             data: { 
               lastBilledAt: now,
+              nextBillingAt: nextBilling,
               billingBalance: 0,
             },
           }),
@@ -106,44 +107,45 @@ export async function processBilling() {
             data: {
               userId: server.userId,
               type: 'BILLING',
-              amount: -totalCost,
-              description: `Hourly billing for server "${server.name}" (${hoursSinceLastBill}h)`,
+              amount: -costForNextHour,
+              description: `Prepaid billing for server "${server.name}" (1h)`,
             },
           }),
         ]);
         
-        console.log(`[Billing] Charged ${totalCost} coins from user ${server.userId} for server ${server.name}`);
+        console.log(`[Billing] Charged ${costForNextHour} coins from user ${server.userId} for server ${server.name} - next billing at ${nextBilling.toISOString()}`);
       } else {
-        // User doesn't have enough coins - accumulate balance
-        const newBalance = server.billingBalance + totalCost;
-        const hoursInDebt = Math.ceil(newBalance / hourlyCost);
+        // User can't afford next hour - pause server
+        console.log(`[Billing] User ${server.userId} cannot afford ${costForNextHour} coins. Auto-pausing server ${server.name}`);
         
-        await prisma.server.update({
-          where: { id: server.id },
-          data: {
-            lastBilledAt: now,
-            billingBalance: newBalance,
-          },
-        });
-        
-        console.log(`[Billing] User ${server.userId} cannot afford ${totalCost} coins. Balance: ${newBalance}, Hours in debt: ${hoursInDebt}`);
-        
-        // Suspend if over grace period
-        if (hoursInDebt >= rates.gracePeriod) {
-          console.log(`[Billing] Suspending server ${server.name} - exceeded grace period`);
+        try {
+          await pterodactyl.suspendPteroServer(server.pterodactylId);
+          await prisma.server.update({
+            where: { id: server.id },
+            data: { 
+              paused: true,
+              nextBillingAt: null, // Clear next billing time
+              suspendedAt: now,
+            },
+          });
           
-          try {
-            await pterodactyl.suspendPteroServer(server.pterodactylId);
-            await prisma.server.update({
-              where: { id: server.id },
-              data: { 
-                suspended: true,
-                suspendedAt: new Date(),
-              },
-            });
-          } catch (err) {
-            console.error(`[Billing] Failed to suspend server ${server.pterodactylId}:`, err);
-          }
+          // Create audit log
+          await prisma.auditLog.create({
+            data: {
+              userId: server.userId,
+              action: 'SERVER_AUTO_PAUSED',
+              details: JSON.stringify({ 
+                serverId: server.id, 
+                serverName: server.name,
+                reason: 'Insufficient balance',
+                requiredCoins: costForNextHour,
+                userBalance: server.user.coins,
+              }),
+              ipAddress: 'system',
+            },
+          });
+        } catch (err) {
+          console.error(`[Billing] Failed to pause server ${server.pterodactylId}:`, err);
         }
       }
     } catch (err) {
@@ -151,37 +153,81 @@ export async function processBilling() {
     }
   }
   
-  // Delete servers suspended for more than 24 hours
-  const suspendedServers = await prisma.server.findMany({
-    where: { 
-      suspended: true,
-      suspendedAt: {
-        lt: new Date(now.getTime() - 24 * 60 * 60 * 1000), // 24 hours ago
-      },
-    },
-  });
+  console.log('[Billing] Processing complete');
+}
+
+// Charge user upfront for next hour (used when creating or unpausing server)
+export async function chargeUpfrontForServer(
+  userId: string, 
+  serverId: string,
+  ram: number,
+  cpu: number,
+  disk: number,
+  databases: number,
+  allocations: number,
+  backups: number
+): Promise<{ success: boolean; error?: string; nextBillingAt?: Date }> {
+  const settings = await prisma.settings.findFirst();
   
-  console.log(`[Billing] Found ${suspendedServers.length} servers suspended for >24h`);
-  
-  for (const server of suspendedServers) {
-    try {
-      console.log(`[Billing] Deleting suspended server ${server.name} (ID: ${server.id})`);
-      
-      // Delete from Pterodactyl
-      await pterodactyl.deletePteroServer(server.pterodactylId);
-      
-      // Delete from database
-      await prisma.server.delete({
-        where: { id: server.id },
-      });
-      
-      console.log(`[Billing] Deleted server ${server.id}`);
-    } catch (err) {
-      console.error(`[Billing] Failed to delete server ${server.id}:`, err);
-    }
+  if (!settings?.billingEnabled) {
+    // Billing disabled - allow without charge
+    const nextBilling = new Date(Date.now() + 60 * 60 * 1000);
+    return { success: true, nextBillingAt: nextBilling };
   }
   
-  console.log('[Billing] Processing complete');
+  const rates: BillingRates = {
+    ramRate: settings.billingRamRate || 1024,
+    cpuRate: settings.billingCpuRate || 50,
+    diskRate: settings.billingDiskRate || 5120,
+    databaseRate: settings.billingDatabaseRate || 1,
+    allocationRate: settings.billingAllocationRate || 1,
+    backupRate: settings.billingBackupRate || 1,
+    gracePeriod: settings.billingGracePeriod || 24,
+  };
+  
+  const hourlyCost = calculateHourlyCost(ram, cpu, disk, databases, allocations, backups, rates);
+  const costForNextHour = Math.ceil(hourlyCost);
+  
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  
+  if (!user) {
+    return { success: false, error: 'User not found' };
+  }
+  
+  if (user.coins < costForNextHour) {
+    return { 
+      success: false, 
+      error: `Insufficient balance. Need ${costForNextHour} coins for next hour, you have ${user.coins} coins.` 
+    };
+  }
+  
+  // Charge user and set next billing time
+  const now = new Date();
+  const nextBilling = new Date(now.getTime() + 60 * 60 * 1000); // +1 hour
+  
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { coins: { decrement: costForNextHour } },
+    }),
+    prisma.server.update({
+      where: { id: serverId },
+      data: { 
+        lastBilledAt: now,
+        nextBillingAt: nextBilling,
+      },
+    }),
+    prisma.transaction.create({
+      data: {
+        userId,
+        type: 'BILLING',
+        amount: -costForNextHour,
+        description: `Prepaid billing for server (1h upfront)`,
+      },
+    }),
+  ]);
+  
+  return { success: true, nextBillingAt: nextBilling };
 }
 
 // Start billing interval (runs every hour)

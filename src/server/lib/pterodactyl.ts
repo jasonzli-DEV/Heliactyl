@@ -292,9 +292,26 @@ export async function findPteroUserByEmail(email: string): Promise<{ id: number;
 
 // Update user password
 export async function updatePteroUserPassword(userId: number, password: string) {
+  // First get the user details to maintain required fields
+  const user = await pteroRequest(`/users/${userId}`) as {
+    attributes: {
+      email: string;
+      username: string;
+      first_name: string;
+      last_name: string;
+    };
+  };
+
+  // Update password while keeping all required fields
   return pteroRequest(`/users/${userId}`, {
     method: 'PATCH',
-    body: { password },
+    body: {
+      email: user.attributes.email,
+      username: user.attributes.username,
+      first_name: user.attributes.first_name,
+      last_name: user.attributes.last_name,
+      password,
+    },
   });
 }
 

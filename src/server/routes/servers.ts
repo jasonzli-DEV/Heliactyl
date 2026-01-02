@@ -246,16 +246,8 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
   const usedBackups = serverAggregates._sum?.backups || 0;
   const usedAllocations = serverAggregates._sum?.allocations || 0;
 
-  // Validate resources
-  if (usedRam + requestedRam > user.ram) {
-    throw createError(`Insufficient RAM. Available: ${user.ram - usedRam}MB`, 400);
-  }
-  if (usedDisk + requestedDisk > user.disk) {
-    throw createError(`Insufficient disk space. Available: ${user.disk - usedDisk}MB`, 400);
-  }
-  if (usedCpu + requestedCpu > user.cpu) {
-    throw createError(`Insufficient CPU. Available: ${user.cpu - usedCpu}%`, 400);
-  }
+  // Validate permanent resources only (databases, backups, allocations)
+  // RAM, Disk, CPU are billed hourly - no limits
   if (usedDatabases + requestedDatabases > user.databases) {
     throw createError('Insufficient database slots', 400);
   }
@@ -305,6 +297,30 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
       eggId: egg.id,
     },
   });
+
+  // Charge upfront for first hour (prepaid billing)
+  const billing = await import('../lib/billing');
+  const chargeResult = await billing.chargeUpfrontForServer(
+    user.id,
+    server.id,
+    requestedRam,
+    requestedCpu,
+    requestedDisk,
+    requestedDatabases,
+    requestedAllocations,
+    requestedBackups
+  );
+
+  if (!chargeResult.success) {
+    // Failed to charge - delete the server
+    try {
+      await pterodactyl.deletePteroServer(server.pterodactylId);
+      await prisma.server.delete({ where: { id: server.id } });
+    } catch (err) {
+      console.error('Failed to cleanup server after billing failure:', err);
+    }
+    throw createError(chargeResult.error || 'Failed to charge for server', 402);
+  }
 
   // Log action
   await prisma.auditLog.create({
@@ -356,6 +372,122 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   });
 
   res.json({ success: true });
+}));
+
+// POST /api/servers/:id/pause - Pause a server (suspend and stop billing)
+router.post('/:id/pause', asyncHandler(async (req: AuthRequest, res) => {
+  const server = await prisma.server.findFirst({
+    where: {
+      id: req.params.id,
+      userId: req.user!.id,
+    },
+  });
+
+  if (!server) {
+    throw createError('Server not found', 404);
+  }
+
+  if (server.paused) {
+    throw createError('Server is already paused', 400);
+  }
+
+  // Suspend server in Pterodactyl
+  try {
+    await pterodactyl.suspendPteroServer(server.pterodactylId);
+  } catch (error) {
+    console.error('Failed to suspend server in Pterodactyl:', error);
+    throw createError('Failed to pause server', 500);
+  }
+
+  // Update server in database - set paused and clear nextBillingAt
+  await prisma.server.update({
+    where: { id: server.id },
+    data: {
+      paused: true,
+      nextBillingAt: null, // Stop billing
+      suspendedAt: new Date(),
+    },
+  });
+
+  // Log action
+  await prisma.auditLog.create({
+    data: {
+      userId: req.user!.id,
+      action: 'SERVER_PAUSED',
+      details: JSON.stringify({ serverId: server.id, name: server.name }),
+      ipAddress: req.ip || 'unknown',
+    },
+  });
+
+  res.json({ success: true, message: 'Server paused successfully' });
+}));
+
+// POST /api/servers/:id/unpause - Unpause a server (charge upfront and unsuspend)
+router.post('/:id/unpause', asyncHandler(async (req: AuthRequest, res) => {
+  const server = await prisma.server.findFirst({
+    where: {
+      id: req.params.id,
+      userId: req.user!.id,
+    },
+  });
+
+  if (!server) {
+    throw createError('Server not found', 404);
+  }
+
+  if (!server.paused) {
+    throw createError('Server is not paused', 400);
+  }
+
+  // Charge upfront for next hour
+  const billing = await import('../lib/billing');
+  const chargeResult = await billing.chargeUpfrontForServer(
+    req.user!.id,
+    server.id,
+    server.ram,
+    server.cpu,
+    server.disk,
+    server.databases,
+    server.allocations,
+    server.backups
+  );
+
+  if (!chargeResult.success) {
+    throw createError(chargeResult.error || 'Insufficient balance to unpause server', 402);
+  }
+
+  // Unsuspend server in Pterodactyl
+  try {
+    await pterodactyl.unsuspendPteroServer(server.pterodactylId);
+  } catch (error) {
+    console.error('Failed to unsuspend server in Pterodactyl:', error);
+    throw createError('Failed to unpause server', 500);
+  }
+
+  // Update server in database
+  await prisma.server.update({
+    where: { id: server.id },
+    data: {
+      paused: false,
+      suspendedAt: null,
+    },
+  });
+
+  // Log action
+  await prisma.auditLog.create({
+    data: {
+      userId: req.user!.id,
+      action: 'SERVER_UNPAUSED',
+      details: JSON.stringify({ serverId: server.id, name: server.name }),
+      ipAddress: req.ip || 'unknown',
+    },
+  });
+
+  res.json({ 
+    success: true, 
+    message: 'Server unpaused successfully',
+    nextBillingAt: chargeResult.nextBillingAt,
+  });
 }));
 
 export default router;

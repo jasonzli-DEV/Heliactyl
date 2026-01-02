@@ -96,10 +96,12 @@ model Server {
   renewalDate     DateTime?
   suspended       Boolean   @default(false)
   suspendedAt     DateTime?
+  paused          Boolean   @default(false)
   
   // Billing tracking
   lastBilledAt    DateTime  @default(now())  // Last time server was billed
   billingBalance  Float     @default(0)      // Accumulated hourly cost owed
+  nextBillingAt   DateTime?                  // When prepaid hour expires (null if paused)
   
   // Timestamps
   createdAt       DateTime  @default(now())
