@@ -190,6 +190,11 @@ model Settings {
   billingBackupRate     Float    @default(1)      // Credits per hour per backup
   billingGracePeriod    Int      @default(24)     // Hours before suspension
   
+  // Slider maximums for server creation
+  maxRamSlider          Int      @default(12288)  // Max RAM in MB (12GB)
+  maxDiskSlider         Int      @default(51200)  // Max Disk in MB (50GB)
+  maxCpuSlider          Int      @default(400)    // Max CPU percentage
+  
   // Timestamps
   updatedAt             DateTime @updatedAt
 }

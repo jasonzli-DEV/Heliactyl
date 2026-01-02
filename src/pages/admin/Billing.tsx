@@ -7,6 +7,9 @@ interface BillingSettings {
   billingRamRate: number;
   billingCpuRate: number;
   billingDiskRate: number;
+  maxRamSlider: number;
+  maxDiskSlider: number;
+  maxCpuSlider: number;
 }
 
 export default function AdminBilling() {
@@ -21,7 +24,7 @@ export default function AdminBilling() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/admin/settings', { credentials: 'include' });
+      const res = await fetch('/api/settings', { credentials: 'include' });
       if (!res.ok) {
         throw new Error('Failed to fetch settings');
       }
@@ -31,6 +34,9 @@ export default function AdminBilling() {
         billingRamRate: data.settings?.billingRamRate || 1024,
         billingCpuRate: data.settings?.billingCpuRate || 50,
         billingDiskRate: data.settings?.billingDiskRate || 5120,
+        maxRamSlider: data.settings?.maxRamSlider || 12288,
+        maxDiskSlider: data.settings?.maxDiskSlider || 51200,
+        maxCpuSlider: data.settings?.maxCpuSlider || 400,
       });
     } catch (error) {
       console.error('Failed to load billing settings:', error);
@@ -40,6 +46,9 @@ export default function AdminBilling() {
         billingRamRate: 1024,
         billingCpuRate: 50,
         billingDiskRate: 5120,
+        maxRamSlider: 12288,
+        maxDiskSlider: 51200,
+        maxCpuSlider: 400,
       });
     } finally {
       setLoading(false);
@@ -54,24 +63,33 @@ export default function AdminBilling() {
       const formData = new FormData(e.currentTarget);
       const data = {
         billingEnabled: formData.get('billingEnabled') === 'on',
-        billingRamRate: parseFloat(formData.get('billingRamRate') as string),
-        billingCpuRate: parseFloat(formData.get('billingCpuRate') as string),
-        billingDiskRate: parseFloat(formData.get('billingDiskRate') as string),
+        billingRamRate: parseFloat(formData.get('billingRamRate') as string) || 1,
+        billingCpuRate: parseFloat(formData.get('billingCpuRate') as string) || 1,
+        billingDiskRate: parseFloat(formData.get('billingDiskRate') as string) || 1,
+        maxRamSlider: (parseInt(formData.get('maxRamSlider') as string) || 12) * 1024, // Convert GB to MB
+        maxDiskSlider: (parseInt(formData.get('maxDiskSlider') as string) || 50) * 1024, // Convert GB to MB
+        maxCpuSlider: parseInt(formData.get('maxCpuSlider') as string) || 400,
       };
 
-      const res = await fetch('/api/admin/settings', {
-        method: 'PUT',
+      console.log('Saving billing settings:', data);
+
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
+      }
 
       showToast('Billing settings saved successfully', 'success');
       await fetchSettings();
     } catch (error) {
-      showToast('Failed to save billing settings', 'error');
+      console.error('Save error:', error);
+      showToast(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     } finally {
       setSaving(false);
     }
@@ -131,7 +149,7 @@ export default function AdminBilling() {
                 defaultValue={settings?.billingCpuRate || 50} 
                 className="input" 
                 min="1"
-                step="25"
+                step="1"
               />
               <p className="text-xs text-gray-500 mt-1">% CPU per credit/hour</p>
               <p className="text-xs text-blue-400 mt-1">Example: 50 = 1 credit gives 50% CPU for 1 hour</p>
@@ -144,7 +162,7 @@ export default function AdminBilling() {
                 defaultValue={settings?.billingDiskRate || 5120} 
                 className="input" 
                 min="1"
-                step="256"
+                step="1"
               />
               <p className="text-xs text-gray-500 mt-1">MB of disk per credit/hour</p>
               <p className="text-xs text-blue-400 mt-1">Example: 5120 = 1 credit gives 5GB disk for 1 hour</p>
@@ -171,7 +189,7 @@ export default function AdminBilling() {
               <input 
                 type="number" 
                 name="maxRamSlider" 
-                defaultValue={12} 
+                defaultValue={Math.round((settings?.maxRamSlider || 12288) / 1024)} 
                 className="input" 
                 min="1"
                 step="1"
@@ -183,7 +201,7 @@ export default function AdminBilling() {
               <input 
                 type="number" 
                 name="maxDiskSlider" 
-                defaultValue={50} 
+                defaultValue={Math.round((settings?.maxDiskSlider || 51200) / 1024)} 
                 className="input" 
                 min="1"
                 step="1"
@@ -195,7 +213,7 @@ export default function AdminBilling() {
               <input 
                 type="number" 
                 name="maxCpuSlider" 
-                defaultValue={400} 
+                defaultValue={settings?.maxCpuSlider || 400} 
                 className="input" 
                 min="50"
                 step="50"

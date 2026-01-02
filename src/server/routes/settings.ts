@@ -50,6 +50,9 @@ router.get('/public', asyncHandler(async (req, res) => {
     earnEnabled: settings.earnEnabled,
     earnCoins: settings.earnCoins,
     earnCooldown: settings.earnCooldown,
+    maxRamSlider: settings.maxRamSlider,
+    maxDiskSlider: settings.maxDiskSlider,
+    maxCpuSlider: settings.maxCpuSlider,
   });
 }));
 
@@ -101,6 +104,8 @@ const ALLOWED_SETTINGS_FIELDS = [
   // Hourly billing settings
   'billingEnabled', 'billingRamRate', 'billingCpuRate', 'billingDiskRate',
   'billingDatabaseRate', 'billingAllocationRate', 'billingBackupRate', 'billingGracePeriod',
+  // Slider maximums
+  'maxRamSlider', 'maxDiskSlider', 'maxCpuSlider',
 ] as const;
 
 // PATCH /api/settings - Update settings (admin only)

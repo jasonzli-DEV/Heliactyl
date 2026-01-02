@@ -42,6 +42,7 @@ export default function CreateServer() {
   const [variables, setVariables] = useState<EggVariable[]>([]);
   const [loadingVariables, setLoadingVariables] = useState(false);
   const [expandedNests, setExpandedNests] = useState<Set<number>>(new Set());
+  const [sliderMaxes, setSliderMaxes] = useState({ maxRamSlider: 12288, maxDiskSlider: 51200, maxCpuSlider: 400 });
   
   const [form, setForm] = useState({
     name: '',
@@ -76,15 +77,25 @@ export default function CreateServer() {
 
   const fetchOptions = async () => {
     try {
-      const [locRes, eggRes] = await Promise.all([
+      const [locRes, eggRes, settingsRes] = await Promise.all([
         fetch('/api/store/locations', { credentials: 'include' }),
         fetch('/api/store/eggs', { credentials: 'include' }),
+        fetch('/api/settings/public', { credentials: 'include' }),
       ]);
 
-      const [locData, eggData] = await Promise.all([locRes.json(), eggRes.json()]);
+      const [locData, eggData, settingsData] = await Promise.all([locRes.json(), eggRes.json(), settingsRes.json()]);
 
       setLocations(locData.locations || []);
       setEggs(eggData.eggs || []);
+      
+      // Get slider maximums from settings (stored in MB, same as we use)
+      if (settingsData) {
+        setSliderMaxes({
+          maxRamSlider: settingsData.maxRamSlider || 12288,
+          maxDiskSlider: settingsData.maxDiskSlider || 51200,
+          maxCpuSlider: settingsData.maxCpuSlider || 400,
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch options:', error);
     } finally {
@@ -383,11 +394,8 @@ export default function CreateServer() {
                     RAM
                   </label>
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${form.ram > (user?.ram || 0) ? 'text-red-400' : 'text-white'}`}>
+                    <span className="text-sm font-medium text-white">
                       {(form.ram / 1024).toFixed(1)} GB
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      / {((user?.ram || 0) / 1024).toFixed(1)} GB available
                     </span>
                   </div>
                 </div>
@@ -396,16 +404,13 @@ export default function CreateServer() {
                   value={form.ram}
                   onChange={(e) => setForm({ ...form, ram: parseInt(e.target.value) })}
                   min={1024}
-                  max={user?.ram || 1024}
+                  max={sliderMaxes.maxRamSlider}
                   step={1024}
                   className="slider w-full"
                   style={{
-                    background: `linear-gradient(to right, rgb(74, 222, 128) 0%, rgb(74, 222, 128) ${((form.ram - 1024) / ((user?.ram || 1024) - 1024)) * 100}%, rgb(31, 41, 55) ${((form.ram - 1024) / ((user?.ram || 1024) - 1024)) * 100}%, rgb(31, 41, 55) 100%)`
+                    background: `linear-gradient(to right, rgb(74, 222, 128) 0%, rgb(74, 222, 128) ${((form.ram - 1024) / (sliderMaxes.maxRamSlider - 1024)) * 100}%, rgb(31, 41, 55) ${((form.ram - 1024) / (sliderMaxes.maxRamSlider - 1024)) * 100}%, rgb(31, 41, 55) 100%)`
                   }}
                 />
-                {form.ram > (user?.ram || 0) && (
-                  <p className="text-xs text-red-400 mt-1">⚠️ Insufficient RAM available</p>
-                )}
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -414,11 +419,8 @@ export default function CreateServer() {
                     Disk
                   </label>
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${form.disk > (user?.disk || 0) ? 'text-red-400' : 'text-white'}`}>
+                    <span className="text-sm font-medium text-white">
                       {(form.disk / 1024).toFixed(1)} GB
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      / {((user?.disk || 0) / 1024).toFixed(1)} GB available
                     </span>
                   </div>
                 </div>
@@ -427,16 +429,13 @@ export default function CreateServer() {
                   value={form.disk}
                   onChange={(e) => setForm({ ...form, disk: parseInt(e.target.value) })}
                   min={2048}
-                  max={user?.disk || 2048}
+                  max={sliderMaxes.maxDiskSlider}
                   step={1024}
                   className="slider w-full"
                   style={{
-                    background: `linear-gradient(to right, rgb(250, 204, 21) 0%, rgb(250, 204, 21) ${((form.disk - 2048) / ((user?.disk || 2048) - 2048)) * 100}%, rgb(31, 41, 55) ${((form.disk - 2048) / ((user?.disk || 2048) - 2048)) * 100}%, rgb(31, 41, 55) 100%)`
+                    background: `linear-gradient(to right, rgb(250, 204, 21) 0%, rgb(250, 204, 21) ${((form.disk - 2048) / (sliderMaxes.maxDiskSlider - 2048)) * 100}%, rgb(31, 41, 55) ${((form.disk - 2048) / (sliderMaxes.maxDiskSlider - 2048)) * 100}%, rgb(31, 41, 55) 100%)`
                   }}
                 />
-                {form.disk > (user?.disk || 0) && (
-                  <p className="text-xs text-red-400 mt-1">⚠️ Insufficient disk available</p>
-                )}
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -445,11 +444,8 @@ export default function CreateServer() {
                     CPU
                   </label>
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${form.cpu > (user?.cpu || 0) ? 'text-red-400' : 'text-white'}`}>
+                    <span className="text-sm font-medium text-white">
                       {form.cpu}%
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      / {user?.cpu || 0}% available
                     </span>
                   </div>
                 </div>
@@ -458,16 +454,13 @@ export default function CreateServer() {
                   value={form.cpu}
                   onChange={(e) => setForm({ ...form, cpu: parseInt(e.target.value) })}
                   min={50}
-                  max={user?.cpu || 50}
+                  max={sliderMaxes.maxCpuSlider}
                   step={50}
                   className="slider w-full"
                   style={{
-                    background: `linear-gradient(to right, rgb(248, 113, 113) 0%, rgb(248, 113, 113) ${((form.cpu - 50) / ((user?.cpu || 50) - 50)) * 100}%, rgb(31, 41, 55) ${((form.cpu - 50) / ((user?.cpu || 50) - 50)) * 100}%, rgb(31, 41, 55) 100%)`
+                    background: `linear-gradient(to right, rgb(248, 113, 113) 0%, rgb(248, 113, 113) ${((form.cpu - 50) / (sliderMaxes.maxCpuSlider - 50)) * 100}%, rgb(31, 41, 55) ${((form.cpu - 50) / (sliderMaxes.maxCpuSlider - 50)) * 100}%, rgb(31, 41, 55) 100%)`
                   }}
                 />
-                {form.cpu > (user?.cpu || 0) && (
-                  <p className="text-xs text-red-400 mt-1">⚠️ Insufficient CPU available</p>
-                )}
               </div>
             </div>
 
