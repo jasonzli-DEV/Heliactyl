@@ -32,6 +32,8 @@ export default function Dashboard() {
   const [servers, setServers] = useState<any[]>([]);
   const [billingEnabled, setBillingEnabled] = useState(false);
 
+  useEffect(() => {
+    fetchResources();
     fetchServers();
   }, []);
 
@@ -44,9 +46,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Failed to fetch servers:', error);
     }
-  }ect(() => {
-    fetchResources();
-  }, []);
+  };
 
   const fetchResources = async () => {
     try {
