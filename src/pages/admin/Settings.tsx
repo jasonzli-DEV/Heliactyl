@@ -271,13 +271,23 @@ export default function AdminSettings() {
           )}
 
           {updateResult && (
-            <div className={`p-3 rounded-lg flex items-center gap-2 ${
+            <div className={`p-4 rounded-lg ${
               updateResult.success 
-                ? 'bg-green-900/30 border border-green-700 text-green-400' 
-                : 'bg-red-900/30 border border-red-700 text-red-400'
+                ? 'bg-green-900/30 border border-green-700' 
+                : 'bg-red-900/30 border border-red-700'
             }`}>
-              {updateResult.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              {updateResult.message}
+              <div className="flex items-start gap-3">
+                {updateResult.success ? (
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <p className={`text-sm font-medium ${updateResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                    {updateResult.message}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
