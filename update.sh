@@ -51,9 +51,26 @@ mkdir -p "$BACKUP_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="$BACKUP_DIR/enderactyl_backup_$TIMESTAMP.db"
 
-if [ -f "prisma/enderactyl.db" ]; then
+# Backup database
+if [ -f "prisma/heliactyl.db" ]; then
+    cp prisma/heliactyl.db "$BACKUP_FILE"
+    log "Database backed up to: $BACKUP_FILE"
+elif [ -f "prisma/enderactyl.db" ]; then
     cp prisma/enderactyl.db "$BACKUP_FILE"
     log "Database backed up to: $BACKUP_FILE"
+fi
+
+# Backup uploads directory
+if [ -d "uploads" ] && [ "$(ls -A uploads)" ]; then
+    UPLOADS_BACKUP="$BACKUP_DIR/uploads_$TIMESTAMP"
+    cp -r uploads "$UPLOADS_BACKUP"
+    log "Uploads backed up to: $UPLOADS_BACKUP"
+fi
+
+# Backup .env file
+if [ -f ".env" ]; then
+    cp .env "$BACKUP_DIR/.env_$TIMESTAMP"
+    log ".env backed up"
 fi
 
 # Enable maintenance mode (stop the service)
@@ -77,8 +94,20 @@ else
     
     # Restore database
     if [ -f "$BACKUP_FILE" ]; then
-        cp "$BACKUP_FILE" prisma/enderactyl.db
+        cp "$BACKUP_FILE" prisma/heliactyl.db 2>/dev/null || cp "$BACKUP_FILE" prisma/enderactyl.db
         log "Database restored"
+    fi
+    
+    # Restore uploads directory
+    if [ -d "$UPLOADS_BACKUP" ]; then
+        cp -r "$UPLOADS_BACKUP"/* uploads/ 2>/dev/null || mkdir -p uploads
+        log "Uploads restored"
+    fi
+    
+    # Restore .env file
+    if [ -f "$BACKUP_DIR/.env_$TIMESTAMP" ]; then
+        cp "$BACKUP_DIR/.env_$TIMESTAMP" .env
+        log ".env restored"
     fi
 fi
 
@@ -97,6 +126,10 @@ npm run build
 
 # Set permissions
 chown -R www-data:www-data "$INSTALL_DIR"
+chmod 755 "$INSTALL_DIR/uploads" 2>/dev/null || mkdir -p "$INSTALL_DIR/uploads" && chmod 755 "$INSTALL_DIR/uploads"
+# Ensure database directory and file are writable
+chmod 755 "$INSTALL_DIR/prisma"
+chmod 664 "$INSTALL_DIR/prisma/heliactyl.db" 2>/dev/null || true
 
 # Restart service
 if systemctl is-enabled --quiet enderactyl 2>/dev/null; then

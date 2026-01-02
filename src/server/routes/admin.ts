@@ -66,12 +66,17 @@ router.get('/users', asyncHandler(async (req: AuthRequest, res) => {
 // PUT /api/admin/users/:id - Whitelist allowed fields to prevent mass assignment
 router.put('/users/:id', asyncHandler(async (req: AuthRequest, res) => {
   // Whitelist allowed fields to prevent privilege escalation
-  const allowedFields = ['username', 'coins', 'ram', 'disk', 'cpu', 'servers', 'databases', 'backups', 'allocations', 'banned', 'banReason', 'packageId'] as const;
+  const allowedFields = ['username', 'coins', 'ram', 'disk', 'cpu', 'servers', 'databases', 'backups', 'allocations', 'banned', 'banReason', 'banExpiresAt', 'packageId'] as const;
   const updates: Record<string, unknown> = {};
   
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) {
-      updates[field] = req.body[field];
+      // Handle banExpiresAt - convert ISO string to Date or null
+      if (field === 'banExpiresAt') {
+        updates[field] = req.body[field] ? new Date(req.body[field]) : null;
+      } else {
+        updates[field] = req.body[field];
+      }
     }
   }
   

@@ -64,6 +64,18 @@ router.post('/test-pterodactyl', asyncHandler(async (req, res) => {
 
 // POST /api/setup/complete - Complete setup
 router.post('/complete', asyncHandler(async (req, res) => {
+  // SECURITY: Check if setup is already complete
+  const existingSettings = await prisma.settings.findFirst();
+  const isAlreadySetup = existingSettings && 
+    existingSettings.discordClientId && 
+    existingSettings.discordClientSecret &&
+    existingSettings.pterodactylUrl && 
+    existingSettings.pterodactylApiKey;
+  
+  if (isAlreadySetup) {
+    throw createError('Setup is already complete. Use admin settings to modify configuration.', 403);
+  }
+
   const {
     siteName,
     siteUrl,

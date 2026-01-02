@@ -10,10 +10,8 @@ interface User {
   isAdmin: boolean;
   banned: boolean;
   banReason: string | null;
+  banExpiresAt: string | null;
   coins: number;
-  ram: number;
-  disk: number;
-  cpu: number;
   servers: number;
   pterodactylId: number | null;
   createdAt: string;
@@ -269,16 +267,34 @@ export default function AdminUsers() {
               onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
+                const banned = formData.get('banned') === 'on';
+                const banDuration = formData.get('banDuration') as string;
+                
+                // Calculate ban expiration date
+                let banExpiresAt: string | null = null;
+                if (banned && banDuration) {
+                  const now = new Date();
+                  const match = banDuration.match(/^(\d+)(h|d)$/);
+                  if (match) {
+                    const value = parseInt(match[1]);
+                    const unit = match[2];
+                    if (unit === 'h') {
+                      now.setHours(now.getHours() + value);
+                    } else if (unit === 'd') {
+                      now.setDate(now.getDate() + value);
+                    }
+                    banExpiresAt = now.toISOString();
+                  }
+                }
+                
                 updateUser(editingUser.id, {
                   isAdmin: formData.get('isAdmin') === 'on',
-                  banned: formData.get('banned') === 'on',
+                  banned,
                   banReason: formData.get('banReason') as string,
+                  banExpiresAt,
                   coins: parseInt(formData.get('coins') as string) || 0,
-                  ram: parseInt(formData.get('ram') as string) || 0,
-                  disk: parseInt(formData.get('disk') as string) || 0,
-                  cpu: parseInt(formData.get('cpu') as string) || 0,
                   servers: parseInt(formData.get('servers') as string) || 0,
-                });
+                } as Partial<User>);
               }}
               className="p-6 space-y-4"
             >
@@ -310,7 +326,25 @@ export default function AdminUsers() {
                   name="banReason"
                   defaultValue={editingUser.banReason || ''}
                   className="input"
+                  placeholder="Reason for ban..."
                 />
+              </div>
+
+              <div>
+                <label className="label">Ban Duration</label>
+                <select name="banDuration" className="input" defaultValue="">
+                  <option value="">Permanent</option>
+                  <option value="1h">1 Hour</option>
+                  <option value="6h">6 Hours</option>
+                  <option value="12h">12 Hours</option>
+                  <option value="1d">1 Day</option>
+                  <option value="3d">3 Days</option>
+                  <option value="7d">7 Days</option>
+                  <option value="14d">14 Days</option>
+                  <option value="30d">30 Days</option>
+                  <option value="90d">90 Days</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Leave as 'Permanent' for indefinite ban</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -332,33 +366,7 @@ export default function AdminUsers() {
                     className="input"
                   />
                 </div>
-                <div>
-                  <label className="label">RAM (MB)</label>
-                  <input
-                    type="number"
-                    name="ram"
-                    defaultValue={editingUser.ram}
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label className="label">Disk (MB)</label>
-                  <input
-                    type="number"
-                    name="disk"
-                    defaultValue={editingUser.disk}
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label className="label">CPU (%)</label>
-                  <input
-                    type="number"
-                    name="cpu"
-                    defaultValue={editingUser.cpu}
-                    className="input"
-                  />
-                </div>
+
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-dark-700">

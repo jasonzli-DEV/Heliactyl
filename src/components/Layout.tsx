@@ -53,6 +53,7 @@ const adminNavItems = [
   { to: '/admin/eggs', icon: Egg, label: 'Eggs' },
   { to: '/admin/coupons', icon: Tags, label: 'Coupons' },
   { to: '/admin/tickets', icon: MessageSquare, label: 'Tickets' },
+  { to: '/admin/earn', icon: Gift, label: 'Earn' },
   { to: '/admin/billing', icon: CreditCard, label: 'Billing' },
   { to: '/admin/settings', icon: Settings, label: 'Settings' },
   { to: '/admin/audit-logs', icon: ClipboardList, label: 'Audit Logs' },

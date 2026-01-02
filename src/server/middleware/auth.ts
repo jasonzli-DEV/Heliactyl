@@ -9,7 +9,10 @@ async function getJwtSecret(): Promise<string> {
   if (cachedJwtSecret) return cachedJwtSecret;
   
   const settings = await prisma.settings.findFirst();
-  cachedJwtSecret = settings?.jwtSecret || 'enderbit-dev-secret-change-me';
+  if (!settings?.jwtSecret) {
+    throw new Error('JWT secret not configured. Please complete setup first.');
+  }
+  cachedJwtSecret = settings.jwtSecret;
   return cachedJwtSecret;
 }
 
@@ -85,8 +88,19 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: 'User not found' });
   }
 
-  if (user.banned) {
-    return res.status(403).json({ error: 'Account banned', reason: user.banReason });
+  // Check if ban has expired
+  if (user.banned && user.banExpiresAt && new Date(user.banExpiresAt) < new Date()) {
+    // Ban has expired, automatically unban
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { banned: false, banReason: null, banExpiresAt: null },
+    });
+  } else if (user.banned) {
+    return res.status(403).json({ 
+      error: 'Account banned', 
+      reason: user.banReason,
+      expiresAt: user.banExpiresAt,
+    });
   }
 
   req.user = {
@@ -96,6 +110,17 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     email: user.email || '',
     isAdmin: user.isAdmin,
   };
+
+  // Check maintenance mode - only allow admins
+  if (!user.isAdmin) {
+    const settings = await prisma.settings.findFirst();
+    if (settings?.maintenanceMode) {
+      return res.status(503).json({ 
+        error: 'Maintenance mode',
+        message: settings.maintenanceMessage || 'The panel is currently undergoing maintenance. Please try again later.'
+      });
+    }
+  }
 
   next();
 }
@@ -122,8 +147,19 @@ export async function requireAdmin(req: AuthRequest, res: Response, next: NextFu
     return res.status(401).json({ error: 'User not found' });
   }
 
-  if (user.banned) {
-    return res.status(403).json({ error: 'Account banned', reason: user.banReason });
+  // Check if ban has expired
+  if (user.banned && user.banExpiresAt && new Date(user.banExpiresAt) < new Date()) {
+    // Ban has expired, automatically unban
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { banned: false, banReason: null, banExpiresAt: null },
+    });
+  } else if (user.banned) {
+    return res.status(403).json({ 
+      error: 'Account banned', 
+      reason: user.banReason,
+      expiresAt: user.banExpiresAt,
+    });
   }
 
   // Check admin status from database (not JWT)

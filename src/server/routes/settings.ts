@@ -75,6 +75,7 @@ router.get('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
       pterodactylKey: settings.pterodactylKey ? '••••••••' : null,
       discordClientSecret: settings.discordClientSecret ? '••••••••' : null,
       cutyApiToken: settings.cutyApiToken ? '••••••••' : null,
+      discordBotToken: settings.discordBotToken ? '••••••••' : null,
     }
   });
 }));
@@ -93,6 +94,7 @@ router.get('/full', requireAdmin, asyncHandler(async (req: AuthRequest, res) => 
       pterodactylKey: settings.pterodactylKey ? '••••••••' : null,
       discordClientSecret: settings.discordClientSecret ? '••••••••' : null,
       cutyApiToken: settings.cutyApiToken ? '••••••••' : null,
+      discordBotToken: settings.discordBotToken ? '••••••••' : null,
     }
   });
 }));
@@ -101,11 +103,13 @@ router.get('/full', requireAdmin, asyncHandler(async (req: AuthRequest, res) => 
 const ALLOWED_SETTINGS_FIELDS = [
   'siteName', 'siteDescription', 'logo', 'favicon', 'theme', 'accentColor', 'siteUrl',
   'pterodactylUrl', 'pterodactylKey',
-  'discordClientId', 'discordClientSecret', 'discordRedirectUri', 'discordInvite', 'adminDiscordIds',
+  'discordClientId', 'discordClientSecret', 'discordRedirectUri', 'discordInvite', 'adminDiscordIds', 'discordGuildId',
   'allowNewUsers', 'maintenanceMode', 'maintenanceMessage', 'footerText',
   'defaultRam', 'defaultDisk', 'defaultCpu', 'defaultServers', 'defaultDatabases', 'defaultBackups', 'defaultAllocations', 'defaultCoins',
   'afkEnabled', 'afkCoinsPerMinute', 'afkMaxMinutes', 'afkInterval',
   'storeEnabled', 'earnEnabled', 'earnCoins', 'earnCooldown', 'cutyApiToken',
+  // Discord Status Earn settings
+  'discordBotToken', 'statusEarnEnabled', 'statusEarnText', 'statusEarnCoins', 'statusEarnInterval',
   // Hourly billing settings
   'billingEnabled', 'billingRamRate', 'billingCpuRate', 'billingDiskRate',
   'billingDatabaseRate', 'billingAllocationRate', 'billingBackupRate', 'billingGracePeriod',
@@ -123,11 +127,6 @@ router.patch('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
       updates[field] = req.body[field];
     }
   }
-
-  // Force RAM/Disk/CPU to 0 since they're billed hourly (not given as default resources)
-  updates.defaultRam = 0;
-  updates.defaultDisk = 0;
-  updates.defaultCpu = 0;
 
   // Don't update secrets if they're masked
   if (updates.pterodactylKey === '••••••••') {
@@ -165,6 +164,7 @@ router.patch('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
       pterodactylKey: settings.pterodactylKey ? '••••••••' : null,
       discordClientSecret: settings.discordClientSecret ? '••••••••' : null,
       cutyApiToken: settings.cutyApiToken ? '••••••••' : null,
+      discordBotToken: settings.discordBotToken ? '••••••••' : null,
     }
   });
 }));
@@ -180,11 +180,6 @@ router.put('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
     }
   }
 
-  // Force RAM/Disk/CPU to 0 since they're billed hourly (not given as default resources)
-  updates.defaultRam = 0;
-  updates.defaultDisk = 0;
-  updates.defaultCpu = 0;
-
   // Don't update secrets if they're masked
   if (updates.pterodactylKey === '••••••••') {
     delete updates.pterodactylKey;
@@ -194,6 +189,9 @@ router.put('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
   }
   if (updates.cutyApiToken === '••••••••') {
     delete updates.cutyApiToken;
+  }
+  if (updates.discordBotToken === '••••••••') {
+    delete updates.discordBotToken;
   }
 
   const settings = await prisma.settings.upsert({
@@ -220,6 +218,7 @@ router.put('/', requireAdmin, asyncHandler(async (req: AuthRequest, res) => {
     pterodactylKey: settings.pterodactylKey ? '••••••••' : null,
     discordClientSecret: settings.discordClientSecret ? '••••••••' : null,
     cutyApiToken: settings.cutyApiToken ? '••••••••' : null,
+    discordBotToken: settings.discordBotToken ? '••••••••' : null,
   });
 }));
 

@@ -1,4 +1,5 @@
 import { prisma } from './database';
+import { randomInt } from 'crypto';
 
 interface PteroRequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -393,7 +394,8 @@ export function generatePassword(length = 16): string {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
   let password = '';
   for (let i = 0; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Use cryptographically secure random number
+    password += chars.charAt(randomInt(0, chars.length));
   }
   return password;
 }

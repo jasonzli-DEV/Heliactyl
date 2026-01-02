@@ -6,9 +6,9 @@ import { randomBytes } from 'crypto';
 
 const router = Router();
 
-// Generate a short random token (8 chars)
-function generateShortToken(): string {
-  return randomBytes(4).toString('hex').toUpperCase();
+// Generate a secure random token (32 chars for security)
+function generateSecureToken(): string {
+  return randomBytes(16).toString('hex');
 }
 
 // POST /api/earn/generate - Generate a new earn link for the user
@@ -45,8 +45,8 @@ router.post('/generate', requireAuth, asyncHandler(async (req: AuthRequest, res)
     }
   }
 
-  // Generate a short token for the callback URL
-  const token = generateShortToken();
+  // Generate a secure token for the callback URL
+  const token = generateSecureToken();
 
   // Create the earn token in database
   await prisma.earnToken.create({
@@ -75,7 +75,8 @@ router.post('/generate', requireAuth, asyncHandler(async (req: AuthRequest, res)
 router.get('/callback/:token', asyncHandler(async (req, res) => {
   const { token } = req.params;
 
-  if (!token || token.length !== 8) {
+  // Token should be 32 hex characters
+  if (!token || !/^[a-f0-9]{32}$/i.test(token)) {
     return res.redirect('/?error=invalid_token');
   }
 

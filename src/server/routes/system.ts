@@ -1,6 +1,8 @@
 import { Router } from 'express';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
+import { existsSync } from 'fs';
+import path from 'path';
 import { requireAuth, requireAdmin, type AuthRequest } from '../middleware/auth';
 import { asyncHandler, createError } from '../middleware/error';
 import { prisma } from '../lib/database';
@@ -112,20 +114,25 @@ router.post('/update', asyncHandler(async (req: AuthRequest, res) => {
   });
 
   try {
-    // Execute the update script in the background
-    const updateScript = process.cwd() + '/update.sh';
+    // Execute the update script safely - use absolute resolved path
+    const projectRoot = path.resolve(process.cwd());
+    const updateScript = path.join(projectRoot, 'update.sh');
     
-    // Check if update script exists
-    try {
-      await execAsync(`test -f ${updateScript}`);
-    } catch {
-      throw new Error('Update script not found. Please ensure update.sh exists in the project root.');
+    // SECURITY: Verify the script is within project directory and exists
+    if (!updateScript.startsWith(projectRoot) || !existsSync(updateScript)) {
+      throw new Error('Update script not found or invalid path.');
     }
 
-    // Start update in background - don't wait for it
-    execAsync(`sudo bash ${updateScript} > /tmp/enderactyl-update.log 2>&1`, {
-      cwd: process.cwd(),
-    }).catch((err) => {
+    // Start update in background using spawn (safer than exec with shell)
+    const updateProcess = spawn('bash', [updateScript], {
+      cwd: projectRoot,
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    
+    updateProcess.unref(); // Allow parent to exit independently
+    
+    updateProcess.on('error', (err) => {
       console.error('Update script error:', err);
     });
 

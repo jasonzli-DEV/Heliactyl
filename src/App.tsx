@@ -11,6 +11,7 @@ import SetupRoute from './components/SetupRoute';
 import Login from './pages/Login';
 import Setup from './pages/Setup';
 import Maintenance from './pages/Maintenance';
+import Banned from './pages/Banned';
 import Dashboard from './pages/Dashboard';
 import Servers from './pages/Servers';
 import CreateServer from './pages/CreateServer';
@@ -32,22 +33,30 @@ import AdminEggs from './pages/admin/Eggs';
 import AdminCoupons from './pages/admin/Coupons';
 import AdminTickets from './pages/admin/Tickets';
 import AdminBilling from './pages/admin/Billing';
+import AdminEarn from './pages/admin/Earn';
 import AdminSettings from './pages/admin/Settings';
 import AdminAuditLogs from './pages/admin/AuditLogs';
 
 function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
-  const { settings, loading } = useSettings();
-  const { user } = useAuth();
-
-  if (loading) {
-    return null;
+  const { settings, loading: settingsLoading } = useSettings();
+  const { user, loading: authLoading, banned } = useAuth();
+  
+  // Don't do anything during loading or if maintenance is off
+  if (settingsLoading || authLoading || !settings?.maintenanceMode) {
+    return <>{children}</>;
   }
 
-  // Show maintenance page if enabled and user is not admin
-  if (settings?.maintenanceMode && !user?.isAdmin) {
+  // Show banned page if user is banned
+  if (banned) {
+    return <Banned />;
+  }
+
+  // If maintenance mode is on and user is not an admin, show maintenance page
+  if (!user || !user.isAdmin) {
     return <Maintenance />;
   }
 
+  // Admin bypass - show normal app
   return <>{children}</>;
 }
 
@@ -98,6 +107,7 @@ export default function App() {
                 <Route path="/admin/eggs" element={<AdminEggs />} />
                 <Route path="/admin/coupons" element={<AdminCoupons />} />
                 <Route path="/admin/tickets" element={<AdminTickets />} />
+                <Route path="/admin/earn" element={<AdminEarn />} />
                 <Route path="/admin/billing" element={<AdminBilling />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
                 <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />

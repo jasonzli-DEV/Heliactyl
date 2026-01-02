@@ -360,7 +360,12 @@ export default function Servers() {
                 </p>
                 {billingEnabled && server.nextBillingAt && !server.paused && (
                   <p className="text-xs text-amber-400 mt-1">
-                    Next renewal: {new Date(Math.round(new Date(server.nextBillingAt).getTime() / 60000) * 60000).toLocaleString()}
+                    Next renewal: {new Date(server.nextBillingAt).toLocaleString([], { 
+                      month: 'short', 
+                      day: 'numeric', 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
                   </p>
                 )}
               </div>

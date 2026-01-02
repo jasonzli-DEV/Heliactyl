@@ -17,11 +17,17 @@ interface User {
   allocations: number;
   pterodactylId: number | null;
   createdAt: string;
+  banned?: boolean;
+  banReason?: string | null;
+  banExpiresAt?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  banned: boolean;
+  banReason: string | null;
+  banExpiresAt: string | null;
   login: () => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -32,6 +38,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [banned, setBanned] = useState(false);
+  const [banReason, setBanReason] = useState<string | null>(null);
+  const [banExpiresAt, setBanExpiresAt] = useState<string | null>(null);
 
   const refreshUser = async () => {
     try {
@@ -39,7 +48,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
       });
       const data = await res.json();
-      setUser(data.user);
+      
+      if (data.banned) {
+        setBanned(true);
+        setBanReason(data.banReason || null);
+        setBanExpiresAt(data.banExpiresAt || null);
+        setUser({ 
+          id: data.user?.id || '',
+          discordId: data.user?.discordId || '',
+          username: data.user?.username || 'Banned User',
+          email: data.user?.email || '',
+          avatar: data.user?.avatar || null,
+          isAdmin: false,
+          coins: 0,
+          ram: 0,
+          disk: 0,
+          cpu: 0,
+          servers: 0,
+          databases: 0,
+          backups: 0,
+          allocations: 0,
+          pterodactylId: null,
+          createdAt: new Date().toISOString(),
+          banned: true,
+          banReason: data.banReason,
+          banExpiresAt: data.banExpiresAt,
+        });
+      } else {
+        setBanned(false);
+        setBanReason(null);
+        setBanExpiresAt(null);
+        setUser(data.user);
+      }
     } catch (error) {
       console.error('Failed to fetch user:', error);
       setUser(null);
@@ -63,6 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
       });
       setUser(null);
+      setBanned(false);
+      setBanReason(null);
+      setBanExpiresAt(null);
       window.location.href = '/login';
     } catch (error) {
       console.error('Failed to logout:', error);
@@ -70,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, banned, banReason, banExpiresAt, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

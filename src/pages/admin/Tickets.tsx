@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Clock, User, Send, X, CheckCircle } from 'lucide-react';
+import { MessageSquare, Clock, User, Send, CheckCircle, Gavel } from 'lucide-react';
 
 interface TicketMessage {
   id: string;
@@ -14,6 +14,7 @@ interface Ticket {
   subject: string;
   status: 'open' | 'closed';
   priority: 'low' | 'normal' | 'high';
+  type: 'support' | 'ban-appeal';
   createdAt: string;
   updatedAt: string;
   user: {
@@ -103,6 +104,11 @@ export default function AdminTickets() {
     high: 'text-red-400 bg-red-400/10',
   };
 
+  const typeColors = {
+    support: 'text-gray-400 bg-gray-400/10',
+    'ban-appeal': 'text-orange-400 bg-orange-400/10',
+  };
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fadeIn">
       <div className="flex items-center justify-between mb-8">
@@ -161,11 +167,19 @@ export default function AdminTickets() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="text-white font-semibold truncate">{ticket.subject}</h3>
-                  <span
-                    className={`text-xs px-2 py-1 rounded ${priorityColors[ticket.priority]}`}
-                  >
-                    {ticket.priority}
-                  </span>
+                  <div className="flex gap-1 flex-shrink-0">
+                    {ticket.type === 'ban-appeal' && (
+                      <span className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${typeColors['ban-appeal']}`}>
+                        <Gavel className="w-3 h-3" />
+                        Appeal
+                      </span>
+                    )}
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${priorityColors[ticket.priority]}`}
+                    >
+                      {ticket.priority}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
                   <User className="w-4 h-4" />
@@ -200,6 +214,12 @@ export default function AdminTickets() {
                         <Clock className="w-4 h-4" />
                         {new Date(selectedTicket.createdAt).toLocaleString()}
                       </span>
+                      {selectedTicket.type === 'ban-appeal' && (
+                        <span className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${typeColors['ban-appeal']}`}>
+                          <Gavel className="w-3 h-3" />
+                          Ban Appeal
+                        </span>
+                      )}
                       <span
                         className={`text-xs px-2 py-1 rounded ${
                           priorityColors[selectedTicket.priority]

@@ -236,6 +236,8 @@ router.get('/me', asyncHandler(async (req, res) => {
           avatar: true,
           isAdmin: true,
           banned: true,
+          banReason: true,
+          banExpiresAt: true,
           coins: true,
           ram: true,
           disk: true,
@@ -256,9 +258,31 @@ router.get('/me', asyncHandler(async (req, res) => {
     return res.json({ user: null });
   }
 
+  // Check if ban expired
+  if (session.user.banned && session.user.banExpiresAt && new Date(session.user.banExpiresAt) < new Date()) {
+    // Auto unban
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { banned: false, banReason: null, banExpiresAt: null },
+    });
+    // Refresh user data
+    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+    return res.json({ user: updatedUser });
+  }
+
   if (session.user.banned) {
-    res.clearCookie('token');
-    return res.json({ user: null, banned: true });
+    // Don't clear cookie - let them access the banned page
+    return res.json({ 
+      user: {
+        id: session.user.id,
+        discordId: session.user.discordId,
+        username: session.user.username,
+        avatar: session.user.avatar,
+      },
+      banned: true,
+      banReason: session.user.banReason,
+      banExpiresAt: session.user.banExpiresAt,
+    });
   }
 
   res.json({ user: session.user });

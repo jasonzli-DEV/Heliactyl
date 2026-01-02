@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Loader2, Save, ExternalLink, Download, RefreshCw, CheckCircle, AlertCircle, Link as LinkIcon, Upload, ImageIcon } from 'lucide-react';
+import { Settings, Loader2, Save, ExternalLink, Download, RefreshCw, CheckCircle, AlertCircle, Upload, ImageIcon } from 'lucide-react';
 
 interface SettingsData {
   siteName: string;
@@ -20,17 +20,10 @@ interface SettingsData {
   maintenanceMessage: string | null;
   footerText: string | null;
   defaultCoins: number;
-  defaultRam: number;
-  defaultDisk: number;
-  defaultCpu: number;
   defaultServers: number;
   defaultDatabases: number;
   defaultBackups: number;
   defaultAllocations: number;
-  earnEnabled: boolean;
-  earnCoins: number;
-  earnCooldown: number;
-  cutyApiToken: string | null;
   // Billing settings
   billingEnabled: boolean;
   billingRamRate: number;
@@ -195,16 +188,10 @@ export default function AdminSettings() {
       maintenanceMessage: fd.get('maintenanceMessage') as string,
       footerText: fd.get('footerText') as string,
       defaultCoins: parseInt(fd.get('defaultCoins') as string) || 0,
-      defaultRam: parseInt(fd.get('defaultRam') as string) || 0,
-      defaultDisk: parseInt(fd.get('defaultDisk') as string) || 0,
-      defaultCpu: parseInt(fd.get('defaultCpu') as string) || 0,
       defaultServers: parseInt(fd.get('defaultServers') as string) || 0,
       defaultDatabases: parseInt(fd.get('defaultDatabases') as string) || 0,
       defaultBackups: parseInt(fd.get('defaultBackups') as string) || 0,
       defaultAllocations: parseInt(fd.get('defaultAllocations') as string) || 0,
-      earnEnabled: fd.get('earnEnabled') === 'on',
-      earnCoins: parseInt(fd.get('earnCoins') as string) || 10,
-      earnCooldown: parseInt(fd.get('earnCooldown') as string) || 300,
       // Billing settings
       billingEnabled: fd.get('billingEnabled') === 'on',
       billingRamRate: parseFloat(fd.get('billingRamRate') as string) || 1,
@@ -227,11 +214,6 @@ export default function AdminSettings() {
       updates.discordClientSecret = discordSecret;
     }
 
-    const cutyToken = fd.get('cutyApiToken') as string;
-    if (cutyToken && !cutyToken.includes('•')) {
-      updates.cutyApiToken = cutyToken;
-    }
-
     try {
       const res = await fetch('/api/settings', {
         method: 'PATCH',
@@ -241,10 +223,11 @@ export default function AdminSettings() {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        setSettings(data.settings);
         setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        // Refresh page to apply settings
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -552,29 +535,14 @@ export default function AdminSettings() {
         <div className="card p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Default Resources (New Users)</h2>
           <p className="text-sm text-gray-400 mb-4">
-            ⚠️ <strong>Important:</strong> RAM/Disk/CPU are NOT given to users - servers are billed hourly for these resources. 
-            Only set <strong>Coins, Servers, Databases, Backups, and Allocations</strong> as defaults.
+            These are the defaults for new users. Coins are the starting balance, and other values are permanent limits.
+            Servers are billed hourly for RAM/Disk/CPU resources.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="label">Coins</label>
               <input type="number" name="defaultCoins" defaultValue={settings?.defaultCoins || 60} className="input" min="0" />
               <p className="text-xs text-gray-500 mt-1">Starting balance</p>
-            </div>
-            <div className="bg-dark-700/50 p-3 rounded-lg opacity-60">
-              <label className="label">RAM (MB)</label>
-              <input type="number" name="defaultRam" value={0} className="input" disabled />
-              <p className="text-xs text-red-400 mt-1">Billed hourly, not given</p>
-            </div>
-            <div className="bg-dark-700/50 p-3 rounded-lg opacity-60">
-              <label className="label">Disk (MB)</label>
-              <input type="number" name="defaultDisk" value={0} className="input" disabled />
-              <p className="text-xs text-red-400 mt-1">Billed hourly, not given</p>
-            </div>
-            <div className="bg-dark-700/50 p-3 rounded-lg opacity-60">
-              <label className="label">CPU (%)</label>
-              <input type="number" name="defaultCpu" value={0} className="input" disabled />
-              <p className="text-xs text-red-400 mt-1">Billed hourly, not given</p>
             </div>
             <div>
               <label className="label">Server Slots</label>
@@ -599,67 +567,10 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* Earn Coins Settings */}
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <LinkIcon className="w-5 h-5" />
-            Earn Coins (Cuty.io)
-          </h2>
-          <p className="text-sm text-gray-400 mb-4">
-            Users click a button to generate a Cuty.io link. After completing the link, they get redirected back and receive coins automatically.
-          </p>
-          
-          <label className="flex items-center gap-2 mb-6">
-            <input type="checkbox" name="earnEnabled" defaultChecked={settings?.earnEnabled ?? true} className="rounded" />
-            <span className="text-sm text-gray-300">Enable Earn Page</span>
-          </label>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="label">Coins Per Earn</label>
-              <input 
-                type="number" 
-                name="earnCoins" 
-                defaultValue={settings?.earnCoins || 10} 
-                className="input" 
-                min="1"
-              />
-              <p className="text-xs text-gray-500 mt-1">How many coins users get each time they complete a link</p>
-            </div>
-            <div>
-              <label className="label">Cooldown (seconds)</label>
-              <input 
-                type="number" 
-                name="earnCooldown" 
-                defaultValue={settings?.earnCooldown || 300} 
-                className="input" 
-                min="60"
-              />
-              <p className="text-xs text-gray-500 mt-1">Time between earns (300 = 5 minutes)</p>
-            </div>
-          </div>
-
-          {/* Cuty.io API Token */}
-          <div className="p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
-            <label className="label">Cuty.io API Token</label>
-            <input 
-              type="password" 
-              name="cutyApiToken" 
-              defaultValue={settings?.cutyApiToken || ''} 
-              className="input" 
-              placeholder="Enter your Cuty.io API token"
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              Get your API token from <a href="https://cuty.io/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">cuty.io/dashboard</a>. 
-              This is required for the earn feature to work.
-            </p>
-          </div>
-        </div>
-
         {/* Save button */}
         <div className="flex items-center justify-end gap-4">
           {saved && (
-            <span className="text-green-400 text-sm animate-fadeIn">Settings saved!</span>
+            <span className="text-green-400 text-sm animate-fadeIn">Settings saved! Refreshing...</span>
           )}
           <button type="submit" disabled={saving} className="btn-primary">
             {saving ? (
