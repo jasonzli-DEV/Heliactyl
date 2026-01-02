@@ -51,9 +51,11 @@ export default function Store() {
     setSuccess(null);
 
     try {
-      const res = await fetch(`/api/store/purchase/${pkg.id}`, {
+      const res = await fetch('/api/store/purchase', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({ packageId: pkg.id }),
       });
 
       const data = await res.json();

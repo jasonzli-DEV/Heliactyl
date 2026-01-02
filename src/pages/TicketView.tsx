@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Loader2, Clock, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 interface TicketMessage {
   id: string;
@@ -28,12 +29,14 @@ interface Ticket {
 export default function TicketView() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [closing, setClosing] = useState(false);
   const [message, setMessage] = useState('');
+  const [showCloseModal, setShowCloseModal] = useState(false);
 
   useEffect(() => {
     fetchTicket();
@@ -72,21 +75,20 @@ export default function TicketView() {
       if (res.ok) {
         setMessage('');
         fetchTicket();
+        showToast('Message sent successfully', 'success');
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to send message');
+        showToast(data.error || 'Failed to send message', 'error');
       }
     } catch (error) {
       console.error('Failed to send message:', error);
-      alert('Failed to send message');
+      showToast('Failed to send message', 'error');
     } finally {
       setSending(false);
     }
   };
 
   const closeTicket = async () => {
-    if (!confirm('Are you sure you want to close this ticket?')) return;
-
     setClosing(true);
     try {
       const res = await fetch(`/api/tickets/${id}/close`, {
@@ -96,14 +98,16 @@ export default function TicketView() {
 
       if (res.ok) {
         fetchTicket();
+        showToast('Ticket closed successfully', 'success');
       } else {
-        alert('Failed to close ticket');
+        showToast('Failed to close ticket', 'error');
       }
     } catch (error) {
       console.error('Failed to close ticket:', error);
-      alert('Failed to close ticket');
+      showToast('Failed to close ticket', 'error');
     } finally {
       setClosing(false);
+      setShowCloseModal(false);
     }
   };
 

@@ -222,36 +222,51 @@ export default function AdminSettings() {
           <Download className="w-5 h-5" />
           System Updates
         </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Keep your dashboard up-to-date with the latest features and bug fixes from GitHub.
+        </p>
         
         <div className="space-y-4">
           {versionInfo && (
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Current:</span>
-                <code className="px-2 py-1 bg-gray-800 rounded text-blue-400">{versionInfo.currentCommit}</code>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="p-3 bg-dark-700/50 rounded-lg">
+                <span className="text-xs text-gray-400 block mb-1">Current Version</span>
+                <code className="text-sm text-blue-400 font-mono">{versionInfo.currentCommit}</code>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Latest:</span>
-                <code className="px-2 py-1 bg-gray-800 rounded text-green-400">{versionInfo.remoteCommit}</code>
+              <div className="p-3 bg-dark-700/50 rounded-lg">
+                <span className="text-xs text-gray-400 block mb-1">Latest Version</span>
+                <code className="text-sm text-green-400 font-mono">{versionInfo.remoteCommit}</code>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Branch:</span>
-                <code className="px-2 py-1 bg-gray-800 rounded text-purple-400">{versionInfo.branch}</code>
+              <div className="p-3 bg-dark-700/50 rounded-lg">
+                <span className="text-xs text-gray-400 block mb-1">Branch</span>
+                <code className="text-sm text-purple-400 font-mono">{versionInfo.branch}</code>
               </div>
             </div>
           )}
 
           {versionInfo?.updateAvailable && (
-            <div className="p-3 bg-blue-900/30 border border-blue-700 rounded-lg">
-              <div className="flex items-center gap-2 text-blue-400 mb-2">
-                <AlertCircle className="w-4 h-4" />
-                <span className="font-medium">Update Available!</span>
+            <div className="p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-blue-400 mb-1">New Update Available!</p>
+                  {versionInfo.changelog && (
+                    <>
+                      <p className="text-sm text-gray-400 mb-2">Changelog:</p>
+                      <pre className="text-xs text-gray-300 bg-dark-800 p-3 rounded whitespace-pre-wrap max-h-40 overflow-auto">
+                        {versionInfo.changelog}
+                      </pre>
+                    </>
+                  )}
+                </div>
               </div>
-              {versionInfo.changelog && (
-                <pre className="text-xs text-gray-400 whitespace-pre-wrap max-h-32 overflow-auto">
-                  {versionInfo.changelog}
-                </pre>
-              )}
+            </div>
+          )}
+
+          {!versionInfo?.updateAvailable && versionInfo && (
+            <div className="p-3 bg-green-900/20 border border-green-700/50 rounded-lg flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400" />
+              <span className="text-sm text-green-400">You're running the latest version!</span>
             </div>
           )}
 
@@ -296,12 +311,12 @@ export default function AdminSettings() {
                 {updating ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Updating...
+                    Updating & Restarting...
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    Update Now
+                    Install Update Now
                   </>
                 )}
               </button>
@@ -495,111 +510,6 @@ export default function AdminSettings() {
               Get your API token from <a href="https://cuty.io/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">cuty.io/dashboard</a>. 
               This is required for the earn feature to work.
             </p>
-          </div>
-        </div>
-
-        {/* Hourly Billing Settings */}
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            Hourly Billing
-          </h2>
-          <p className="text-sm text-gray-400 mb-4">
-            Automatically charge users credits per hour based on their server resources. Servers will be suspended if users run out of credits after the grace period.
-          </p>
-          
-          <label className="flex items-center gap-2 mb-6">
-            <input type="checkbox" name="billingEnabled" defaultChecked={settings?.billingEnabled ?? false} className="rounded" />
-            <span className="text-sm text-gray-300">Enable Hourly Billing</span>
-          </label>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div>
-              <label className="label">RAM Rate</label>
-              <input 
-                type="number" 
-                name="billingRamRate" 
-                defaultValue={settings?.billingRamRate || 1} 
-                className="input" 
-                min="0"
-                step="0.1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Per 1GB/hour</p>
-            </div>
-            <div>
-              <label className="label">CPU Rate</label>
-              <input 
-                type="number" 
-                name="billingCpuRate" 
-                defaultValue={settings?.billingCpuRate || 1} 
-                className="input" 
-                min="0"
-                step="0.1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Per 50%/hour</p>
-            </div>
-            <div>
-              <label className="label">Disk Rate</label>
-              <input 
-                type="number" 
-                name="billingDiskRate" 
-                defaultValue={settings?.billingDiskRate || 1} 
-                className="input" 
-                min="0"
-                step="0.1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Per 5GB/hour</p>
-            </div>
-            <div>
-              <label className="label">Grace Period</label>
-              <input 
-                type="number" 
-                name="billingGracePeriod" 
-                defaultValue={settings?.billingGracePeriod || 24} 
-                className="input" 
-                min="1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Hours before suspend</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="label">Database Rate</label>
-              <input 
-                type="number" 
-                name="billingDatabaseRate" 
-                defaultValue={settings?.billingDatabaseRate || 1} 
-                className="input" 
-                min="0"
-                step="0.1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Per database/hour</p>
-            </div>
-            <div>
-              <label className="label">Allocation Rate</label>
-              <input 
-                type="number" 
-                name="billingAllocationRate" 
-                defaultValue={settings?.billingAllocationRate || 1} 
-                className="input" 
-                min="0"
-                step="0.1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Per port/hour</p>
-            </div>
-            <div>
-              <label className="label">Backup Rate</label>
-              <input 
-                type="number" 
-                name="billingBackupRate" 
-                defaultValue={settings?.billingBackupRate || 1} 
-                className="input" 
-                min="0"
-                step="0.1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Per backup/hour</p>
-            </div>
           </div>
         </div>
 

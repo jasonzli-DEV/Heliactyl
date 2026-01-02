@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Server, Plus, Cpu, HardDrive, MemoryStick, ExternalLink, Trash2, Loader2, Coins, Key, Mail, Copy, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { useToast } from '../context/ToastContext';
 
 interface ServerData {
   id: string;
@@ -28,6 +30,7 @@ interface ServerData {
 
 export default function Servers() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [servers, setServers] = useState<ServerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -35,6 +38,7 @@ export default function Servers() {
   const [resettingPassword, setResettingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
 
   useEffect(() => {
     fetchServers();
@@ -54,10 +58,6 @@ export default function Servers() {
   };
 
   const deleteServer = async (serverId: string) => {
-    if (!confirm('Are you sure you want to delete this server? This action cannot be undone.')) {
-      return;
-    }
-
     setDeleting(serverId);
     try {
       const res = await fetch(`/api/servers/${serverId}`, {
@@ -67,15 +67,17 @@ export default function Servers() {
 
       if (res.ok) {
         setServers(servers.filter((s) => s.id !== serverId));
+        showToast('Server deleted successfully', 'success');
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to delete server');
+        showToast(data.error || 'Failed to delete server', 'error');
       }
     } catch (error) {
       console.error('Failed to delete server:', error);
-      alert('Failed to delete server');
+      showToast('Failed to delete server', 'error');
     } finally {
       setDeleting(null);
+      setShowDeleteModal(null);
     }
   };
 
@@ -90,11 +92,12 @@ export default function Servers() {
       const data = await res.json();
       if (res.ok) {
         setNewPassword(data.password);
+        showToast('Password reset successfully! Copy it below.', 'success');
       } else {
-        alert(data.error || 'Failed to reset password');
+        showToast(data.error || 'Failed to reset password', 'error');
       }
     } catch (error) {
-      alert('Failed to reset password');
+      showToast('Failed to reset password', 'error');
     } finally {
       setResettingPassword(false);
     }
@@ -104,6 +107,7 @@ export default function Servers() {
     if (newPassword) {
       navigator.clipboard.writeText(newPassword);
       setCopied(true);
+      showToast('Password copied to clipboard!', 'success');
       setTimeout(() => setCopied(false), 2000);
     }
   };

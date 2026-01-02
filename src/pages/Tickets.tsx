@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Plus, Loader2, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 interface Ticket {
   id: string;
@@ -13,6 +14,7 @@ interface Ticket {
 }
 
 export default function Tickets() {
+  const { showToast } = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -54,12 +56,13 @@ export default function Tickets() {
       if (res.ok) {
         setCreating(false);
         fetchTickets();
+        showToast('Ticket created successfully', 'success');
       } else {
-        alert('Failed to create ticket');
+        showToast('Failed to create ticket', 'error');
       }
     } catch (error) {
       console.error('Failed to create ticket:', error);
-      alert('Failed to create ticket');
+      showToast('Failed to create ticket', 'error');
     } finally {
       setSubmitting(false);
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   User, 
@@ -17,19 +18,17 @@ import {
 
 export default function Account() {
   const { user, logout } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [copied, setCopied] = useState(false);
 
   const resetPassword = async () => {
-    if (!confirm('Are you sure you want to reset your Pterodactyl password? You will need to use the new password to log into the panel.')) {
-      return;
-    }
-
     setLoading('password');
     setError(null);
     setNewPassword(null);
@@ -44,8 +43,10 @@ export default function Account() {
 
       if (res.ok) {
         setNewPassword(data.password);
+        showToast('Password reset successfully! Copy the new password below.', 'success');
       } else {
         setError(data.error || 'Failed to reset password');
+        showToast(data.error || 'Failed to reset password', 'error');
       }
     } catch {
       setError('Failed to reset password');
