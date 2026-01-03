@@ -15,6 +15,7 @@ interface EarnSettings {
   cutyApiToken: string | null;
   discordBotToken: string | null;
   discordGuildId: string | null;
+  discordAutoJoin: boolean;
   statusEarnEnabled: boolean;
   statusEarnText: string | null;
   statusEarnCoins: number;
@@ -55,6 +56,7 @@ export default function AdminEarn() {
       earnEnabled: fd.get('earnEnabled') === 'on',
       earnCoins: parseInt(fd.get('earnCoins') as string) || 10,
       earnCooldown: parseInt(fd.get('earnCooldown') as string) || 300,
+      discordAutoJoin: fd.get('discordAutoJoin') === 'on',
       statusEarnEnabled: fd.get('statusEarnEnabled') === 'on',
       statusEarnText: fd.get('statusEarnText') as string,
       statusEarnCoins: parseInt(fd.get('statusEarnCoins') as string) || 5,
@@ -241,6 +243,25 @@ export default function AdminEarn() {
               </a>. 
               Enable <span className="text-indigo-400">Presence Intent</span> and <span className="text-indigo-400">Server Members Intent</span> in the bot settings.
             </p>
+          </div>
+
+          {/* Discord Auto-Join */}
+          <div className="flex items-center gap-3 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg mb-4">
+            <input 
+              type="checkbox" 
+              id="discordAutoJoin" 
+              name="discordAutoJoin" 
+              defaultChecked={settings?.discordAutoJoin || false}
+              className="w-5 h-5 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500"
+            />
+            <div className="flex-1">
+              <label htmlFor="discordAutoJoin" className="text-sm font-medium text-white cursor-pointer">
+                Auto-Join Discord Server on Login
+              </label>
+              <p className="text-xs text-gray-400 mt-1">
+                Automatically add users to your Discord server when they log in for the first time. Requires bot token and guild ID to be configured.
+              </p>
+            </div>
           </div>
 
           {!settings?.discordGuildId && (

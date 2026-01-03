@@ -13,7 +13,10 @@ async function getDiscordAuthUrl(): Promise<string> {
     throw new Error('Discord OAuth not configured');
   }
   
-  const scopes = ['identify', 'email'].join(' ');
+  // Add guilds.join scope if auto-join is enabled
+  const scopes = settings.discordAutoJoin 
+    ? ['identify', 'email', 'guilds.join'].join(' ')
+    : ['identify', 'email'].join(' ');
   return `https://discord.com/api/oauth2/authorize?client_id=${settings.discordClientId}&redirect_uri=${encodeURIComponent(settings.discordRedirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}`;
 }
 
@@ -148,6 +151,26 @@ router.get('/callback', asyncHandler(async (req, res) => {
         ipAddress: req.ip || 'unknown',
       },
     });
+
+    // Auto-join Discord server if enabled
+    if (settings.discordAutoJoin && settings.discordGuildId && settings.discordBotToken) {
+      try {
+        await fetch(`https://discord.com/api/v10/guilds/${settings.discordGuildId}/members/${discordUser.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bot ${settings.discordBotToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            access_token: tokens.access_token,
+          }),
+        });
+        console.log(`Auto-joined user ${discordUser.username} to Discord server`);
+      } catch (error) {
+        console.error('Failed to auto-join Discord server:', error);
+        // Don't throw error - registration should still succeed
+      }
+    }
   } else {
     // Existing user - check if they need a Pterodactyl account
     let pterodactylId = user.pterodactylId;

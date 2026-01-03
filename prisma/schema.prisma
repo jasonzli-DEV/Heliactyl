@@ -182,6 +182,7 @@ model Settings {
   // Discord Status Earn settings
   discordBotToken       String?                  // Discord bot token for status checking
   discordGuildId        String?                  // Discord server ID user must be in
+  discordAutoJoin       Boolean  @default(false) // Automatically add users to Discord server on login
   statusEarnEnabled     Boolean  @default(false) // Enable status earning
   statusEarnText        String?                  // Required text in Discord status
   statusEarnCoins       Int      @default(5)     // Coins awarded per interval

@@ -9,6 +9,8 @@ interface Location {
   name: string;
   description: string | null;
   pterodactylId: number;
+  isFull?: boolean;
+  capacityPercent?: number;
 }
 
 interface EggData {
@@ -377,8 +379,8 @@ export default function CreateServer() {
               >
                 <option value="">Select a location</option>
                 {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name} {loc.description ? `- ${loc.description}` : ''}
+                  <option key={loc.id} value={loc.id} disabled={loc.isFull}>
+                    {loc.name} {loc.description ? `- ${loc.description}` : ''} {loc.isFull ? '(FULL)' : loc.capacityPercent ? `(${loc.capacityPercent}%)` : ''}
                   </option>
                 ))}
               </select>

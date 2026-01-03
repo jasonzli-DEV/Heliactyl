@@ -102,7 +102,7 @@ router.get('/locations', asyncHandler(async (_req, res) => {
     orderBy: { name: 'asc' },
   });
 
-  // Filter out locations that are full by checking Pterodactyl nodes
+  // Check capacity and mark locations as full if 90% or more
   const locationsWithCapacity = await Promise.all(
     locations.map(async (loc) => {
       try {
@@ -110,21 +110,31 @@ router.get('/locations', asyncHandler(async (_req, res) => {
         const nodes = await pterodactyl.getNodes() as any[];
         const locationNodes = nodes.filter((n: any) => n.attributes.location_id === loc.pterodactylId);
         
-        const hasCapacity = locationNodes.some((node: any) => {
-          const allocated = node.attributes.allocated_resources?.memory || 0;
-          const total = node.attributes.memory || 0;
-          return total > 0 && allocated < total;
+        // Calculate overall capacity for the location
+        let totalMemory = 0;
+        let allocatedMemory = 0;
+        
+        locationNodes.forEach((node: any) => {
+          totalMemory += node.attributes.memory || 0;
+          allocatedMemory += node.attributes.allocated_resources?.memory || 0;
         });
         
-        return hasCapacity ? loc : null;
+        const capacityPercent = totalMemory > 0 ? (allocatedMemory / totalMemory) * 100 : 0;
+        const isFull = capacityPercent >= 90;
+        
+        return {
+          ...loc,
+          isFull,
+          capacityPercent: Math.round(capacityPercent),
+        };
       } catch (error) {
-        // If error checking capacity, include location to be safe
-        return loc;
+        // If error checking capacity, include location without full flag
+        return { ...loc, isFull: false, capacityPercent: 0 };
       }
     })
   );
 
-  res.json({ locations: locationsWithCapacity.filter(Boolean) });
+  res.json({ locations: locationsWithCapacity });
 }));
 
 // GET /api/store/eggs - List available eggs
