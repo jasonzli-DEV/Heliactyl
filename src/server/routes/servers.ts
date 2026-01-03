@@ -105,15 +105,16 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
   // Check node capacity if RAM is being increased
   if (ram > server.ram) {
     try {
-      const nodes = await pterodactyl.getNodes() as any[];
-      const locationNodes = nodes.filter((n: any) => n.attributes.location_id === server.location.pterodactylId);
+      const nodes = await pterodactyl.getNodesWithUsage();
+      const locationNodes = nodes.filter(n => n.locationId === server.location.pterodactylId);
       
       let totalMemory = 0;
       let allocatedMemory = 0;
       
-      locationNodes.forEach((node: any) => {
-        totalMemory += node.attributes.memory || 0;
-        allocatedMemory += node.attributes.allocated_resources?.memory || 0;
+      locationNodes.forEach(node => {
+        // Account for overallocation
+        totalMemory += node.memory * (1 + (node.memoryOverallocate || 0) / 100);
+        allocatedMemory += node.usedMemory;
       });
       
       const ramIncrease = ram - server.ram;
