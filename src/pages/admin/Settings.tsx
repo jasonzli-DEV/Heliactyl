@@ -149,18 +149,27 @@ export default function AdminSettings() {
         credentials: 'include' 
       });
       const data = await res.json();
-      setUpdateResult({ success: data.success, message: data.message });
       
       if (data.restartRequired) {
-        // Server will restart, show message
+        // Server will restart, show countdown and auto-refresh
         setUpdateResult({ 
           success: true, 
-          message: 'Update complete! Server is restarting... Please refresh in a few seconds.' 
+          message: 'Update started! Server is restarting... This page will refresh in 60 seconds.' 
         });
+        
+        // Auto-refresh after 60 seconds
+        setTimeout(() => {
+          window.location.reload();
+        }, 60000);
+      } else {
+        setUpdateResult({ success: data.success, message: data.message });
+        // Refresh version info after update
+        setTimeout(() => {
+          checkForUpdates();
+        }, 2000);
       }
     } catch (error) {
-      setUpdateResult({ success: false, message: 'Update failed. Please check server logs.' });
-    } finally {
+      setUpdateResult({ success: false, message: 'Update failed. Please check server logs or try running "bash update.sh" via SSH.' });
       setUpdating(false);
     }
   };
