@@ -103,7 +103,7 @@ router.get('/full', requireAdmin, asyncHandler(async (req: AuthRequest, res) => 
 const ALLOWED_SETTINGS_FIELDS = [
   'siteName', 'siteDescription', 'logo', 'favicon', 'theme', 'accentColor', 'siteUrl',
   'pterodactylUrl', 'pterodactylKey',
-  'discordClientId', 'discordClientSecret', 'discordRedirectUri', 'discordInvite', 'adminDiscordIds', 'discordGuildId',
+  'discordClientId', 'discordClientSecret', 'discordRedirectUri', 'discordInvite', 'adminDiscordIds', 'discordGuildId', 'discordAutoJoin',
   'allowNewUsers', 'maintenanceMode', 'maintenanceMessage', 'footerText',
   'defaultRam', 'defaultDisk', 'defaultCpu', 'defaultServers', 'defaultDatabases', 'defaultBackups', 'defaultAllocations', 'defaultCoins',
   'afkEnabled', 'afkCoinsPerMinute', 'afkMaxMinutes', 'afkInterval',
