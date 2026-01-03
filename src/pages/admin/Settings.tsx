@@ -15,6 +15,7 @@ interface SettingsData {
   discordClientSecret: string | null;
   discordGuildId: string | null;
   discordInvite: string | null;
+  discordAutoJoin: boolean;
   allowNewUsers: boolean;
   maintenanceMode: boolean;
   maintenanceMessage: string | null;
@@ -192,6 +193,7 @@ export default function AdminSettings() {
       discordClientId: fd.get('discordClientId') as string,
       discordGuildId: fd.get('discordGuildId') as string,
       discordInvite: fd.get('discordInvite') as string,
+      discordAutoJoin: fd.get('discordAutoJoin') === 'on',
       allowNewUsers: fd.get('allowNewUsers') === 'on',
       maintenanceMode: fd.get('maintenanceMode') === 'on',
       maintenanceMessage: fd.get('maintenanceMessage') as string,
@@ -537,6 +539,25 @@ export default function AdminSettings() {
               <label className="label">Discord Invite Link</label>
               <input type="url" name="discordInvite" defaultValue={settings?.discordInvite || ''} className="input" placeholder="https://discord.gg/..." />
             </div>
+          </div>
+          
+          {/* Auto-Join Toggle */}
+          <div className="mt-4 p-4 bg-indigo-900/20 border border-indigo-700/30 rounded-lg">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input 
+                type="checkbox" 
+                name="discordAutoJoin" 
+                defaultChecked={settings?.discordAutoJoin || false}
+                className="w-5 h-5 mt-0.5 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-white">Auto-Join Discord Server on Login</span>
+                <p className="text-xs text-gray-400 mt-1">
+                  Automatically add users to your Discord server when they log in for the first time.
+                  Requires Guild ID above and Discord Bot Token (configured in Earn settings) to be set.
+                </p>
+              </div>
+            </label>
           </div>
         </div>
 

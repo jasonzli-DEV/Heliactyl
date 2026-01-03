@@ -271,159 +271,168 @@ export default function Earn() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Link Earning Card */}
-        {linkStatus?.enabled && (
-          <div className="card p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-accent-500/20 flex items-center justify-center">
-                <ExternalLink className="w-6 h-6 text-accent-400" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-white">Link Earning</h2>
-                <p className="text-sm text-gray-400">Complete short links</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-3 bg-dark-700/50 rounded-lg">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Reward:</span>
-                  <span className="text-white font-medium">
-                    {linkStatus.coins} {linkStatus.coins === 1 ? 'coin' : 'coins'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-gray-400">Cooldown:</span>
-                  <span className="text-white font-medium">{Math.floor(linkStatus.cooldown / 60)} min</span>
-                </div>
-              </div>
-
-              {cooldownTimer > 0 ? (
-                <div className="text-center">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-mono">{formatTime(cooldownTimer)}</span>
+      {/* Determine if only one method is enabled for full-width layout */}
+      {(() => {
+        const linkEnabled = linkStatus?.enabled;
+        const statusEnabled = statusEarn?.enabled;
+        const bothEnabled = linkEnabled && statusEnabled;
+        
+        return (
+          <div className={bothEnabled ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-6"}>
+            {/* Link Earning Card */}
+            {linkEnabled && (
+              <div className="card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-accent-500/20 flex items-center justify-center">
+                    <ExternalLink className="w-6 h-6 text-accent-400" />
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Wait for cooldown</p>
-                </div>
-              ) : (
-                <button
-                  onClick={generateLink}
-                  disabled={generating}
-                  className="btn-primary w-full"
-                >
-                  {generating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Gift className="w-4 h-4" />
-                      Earn Now
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Discord Status Earning Card */}
-        {statusEarn?.enabled && (
-          <div className="card p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-                <DiscordIcon className="w-6 h-6 text-indigo-400" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-white">Discord Status</h2>
-                <p className="text-sm text-gray-400">Earn while online</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-3 bg-dark-700/50 rounded-lg">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Reward:</span>
-                  <span className="text-white font-medium">{statusEarn.coinsDisplay}</span>
-                </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-gray-400">Every:</span>
-                  <span className="text-white font-medium">{statusEarn.intervalDisplay}</span>
-                </div>
-                <div className="mt-2 pt-2 border-t border-dark-600">
-                  <p className="text-xs text-gray-400">Required status text:</p>
-                  <p className="text-sm text-indigo-400 font-medium mt-1">"{statusEarn.requiredText}"</p>
-                </div>
-              </div>
-
-              {statusEarn.active ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center gap-2 text-green-400">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                    <span className="text-sm font-medium">Active</span>
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Link Earning</h2>
+                    <p className="text-sm text-gray-400">Complete short links</p>
                   </div>
-                  
-                  {statusEarn.consecutiveSec !== undefined && statusEarn.consecutiveSec > 0 && (
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-3 bg-dark-700/50 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Reward:</span>
+                      <span className="text-white font-medium">
+                        {linkStatus.coins} {linkStatus.coins === 1 ? 'coin' : 'coins'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-gray-400">Cooldown:</span>
+                      <span className="text-white font-medium">{Math.floor(linkStatus.cooldown / 60)} min</span>
+                    </div>
+                  </div>
+
+                  {cooldownTimer > 0 ? (
                     <div className="text-center">
-                      <p className="text-xs text-gray-500">Time with valid status</p>
-                      <p className="text-lg font-mono text-white">{formatConsecutiveTime(statusEarn.consecutiveSec)}</p>
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400">
+                        <Clock className="w-4 h-4" />
+                        <span className="font-mono">{formatTime(cooldownTimer)}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Wait for cooldown</p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={generateLink}
+                      disabled={generating}
+                      className="btn-primary w-full"
+                    >
+                      {generating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Gift className="w-4 h-4" />
+                          Earn Now
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Discord Status Earning Card */}
+            {statusEnabled && (
+              <div className="card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                    <DiscordIcon className="w-6 h-6 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Discord Status</h2>
+                    <p className="text-sm text-gray-400">Earn while online</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-3 bg-dark-700/50 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Reward:</span>
+                      <span className="text-white font-medium">{statusEarn.coinsDisplay}</span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-gray-400">Every:</span>
+                      <span className="text-white font-medium">{statusEarn.intervalDisplay}</span>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-dark-600">
+                      <p className="text-xs text-gray-400">Required status text:</p>
+                      <p className="text-sm text-indigo-400 font-medium mt-1">"{statusEarn.requiredText}"</p>
+                    </div>
+                  </div>
+
+                  {statusEarn.active ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-center gap-2 text-green-400">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                        <span className="text-sm font-medium">Active</span>
+                      </div>
+                      
+                      {statusEarn.consecutiveSec !== undefined && statusEarn.consecutiveSec > 0 && (
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500">Time with valid status</p>
+                          <p className="text-lg font-mono text-white">{formatConsecutiveTime(statusEarn.consecutiveSec)}</p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={toggleStatusEarn}
+                        disabled={activating}
+                        className="btn-secondary w-full"
+                      >
+                        {activating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Square className="w-4 h-4" />
+                            Stop Earning
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-xs text-indigo-300">
+                        <p className="font-medium mb-1">How it works:</p>
+                        <ol className="list-decimal list-inside space-y-1 text-indigo-300/80">
+                          <li>Set your Discord custom status to include the required text</li>
+                          <li>Click "Start Earning" below</li>
+                          <li>Stay online with the status to earn coins automatically!</li>
+                        </ol>
+                      </div>
+
+                      <button
+                        onClick={toggleStatusEarn}
+                        disabled={activating || !statusEarn.botReady}
+                        className="btn-primary w-full bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        {activating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : !statusEarn.botReady ? (
+                          <>
+                            <AlertCircle className="w-4 h-4" />
+                            Bot Offline
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4" />
+                            Start Earning
+                          </>
+                        )}
+                      </button>
                     </div>
                   )}
-
-                  <button
-                    onClick={toggleStatusEarn}
-                    disabled={activating}
-                    className="btn-secondary w-full"
-                  >
-                    {activating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Square className="w-4 h-4" />
-                        Stop Earning
-                      </>
-                    )}
-                  </button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-xs text-indigo-300">
-                    <p className="font-medium mb-1">How it works:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-indigo-300/80">
-                      <li>Set your Discord custom status to include the required text</li>
-                      <li>Click "Start Earning" below</li>
-                      <li>Stay online with the status to earn coins automatically!</li>
-                    </ol>
-                  </div>
-
-                  <button
-                    onClick={toggleStatusEarn}
-                    disabled={activating || !statusEarn.botReady}
-                    className="btn-primary w-full bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    {activating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : !statusEarn.botReady ? (
-                      <>
-                        <AlertCircle className="w-4 h-4" />
-                        Bot Offline
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4" />
-                        Start Earning
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* How it works - only show if link earning is enabled */}
       {linkStatus?.enabled && (
