@@ -80,12 +80,13 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
 router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const { ram, disk, cpu, databases, backups, allocations } = req.body;
 
-  // Get server
+  // Get server with location
   const server = await prisma.server.findFirst({
     where: {
       id: req.params.id,
       userId: req.user!.id,
     },
+    include: { location: true },
   });
 
   if (!server) {
@@ -99,6 +100,36 @@ router.patch('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
   if (!user) {
     throw createError('User not found', 404);
+  }
+
+  // Check node capacity if RAM is being increased
+  if (ram > server.ram) {
+    try {
+      const nodes = await pterodactyl.getNodes() as any[];
+      const locationNodes = nodes.filter((n: any) => n.attributes.location_id === server.location.pterodactylId);
+      
+      let totalMemory = 0;
+      let allocatedMemory = 0;
+      
+      locationNodes.forEach((node: any) => {
+        totalMemory += node.attributes.memory || 0;
+        allocatedMemory += node.attributes.allocated_resources?.memory || 0;
+      });
+      
+      const ramIncrease = ram - server.ram;
+      const newAllocated = allocatedMemory + ramIncrease;
+      const capacityPercent = totalMemory > 0 ? (newAllocated / totalMemory) * 100 : 0;
+      
+      if (capacityPercent > 95) {
+        throw createError('Not enough node capacity for this resource increase', 400);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('capacity')) {
+        throw error;
+      }
+      console.error('Failed to check node capacity:', error);
+      // Continue if capacity check fails - Pterodactyl will handle it
+    }
   }
 
   // Get total resources used by ALL user's servers (including this one)

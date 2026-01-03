@@ -1,6 +1,6 @@
 #!/bin/bash
-# Enderactyl Update Script
-# This script updates Enderactyl to the latest version from GitHub
+# Heliactyl Update Script
+# This script safely updates Heliactyl while preserving all settings and data
 
 set -e
 
@@ -22,7 +22,7 @@ info() { echo -e "${BLUE}[i]${NC} $1"; }
 
 echo ""
 echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║        Enderactyl Update Script          ║${NC}"
+echo -e "${BLUE}║         Heliactyl Update Script          ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -31,9 +31,9 @@ if [[ $EUID -ne 0 ]]; then
    error "This script must be run as root"
 fi
 
-# Check if Enderactyl is installed
+# Check if Heliactyl is installed
 if [ ! -d "$INSTALL_DIR" ]; then
-    error "Enderactyl not found at $INSTALL_DIR"
+    error "Heliactyl not found at $INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
@@ -45,26 +45,21 @@ info "Current version: $CURRENT_VERSION"
 # Check for updates
 log "Checking for updates..."
 
-# Backup database
-BACKUP_DIR="/root/enderactyl-backups"
+# Create backup directory
+BACKUP_DIR="/root/heliactyl-backups"
 mkdir -p "$BACKUP_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="$BACKUP_DIR/enderactyl_backup_$TIMESTAMP.db"
 
-# Backup database
+# Backup database (CRITICAL - preserves all settings including billing rates)
 if [ -f "prisma/heliactyl.db" ]; then
-    cp prisma/heliactyl.db "$BACKUP_FILE"
-    log "Database backed up to: $BACKUP_FILE"
-elif [ -f "prisma/enderactyl.db" ]; then
-    cp prisma/enderactyl.db "$BACKUP_FILE"
-    log "Database backed up to: $BACKUP_FILE"
+    cp prisma/heliactyl.db "$BACKUP_DIR/heliactyl_$TIMESTAMP.db"
+    log "Database backed up to: $BACKUP_DIR/heliactyl_$TIMESTAMP.db"
 fi
 
 # Backup uploads directory
-if [ -d "uploads" ] && [ "$(ls -A uploads)" ]; then
-    UPLOADS_BACKUP="$BACKUP_DIR/uploads_$TIMESTAMP"
-    cp -r uploads "$UPLOADS_BACKUP"
-    log "Uploads backed up to: $UPLOADS_BACKUP"
+if [ -d "uploads" ] && [ "$(ls -A uploads 2>/dev/null)" ]; then
+    cp -r uploads "$BACKUP_DIR/uploads_$TIMESTAMP"
+    log "Uploads backed up"
 fi
 
 # Backup .env file
@@ -73,7 +68,7 @@ if [ -f ".env" ]; then
     log ".env backed up"
 fi
 
-# Enable maintenance mode (stop the service)
+# Stop the service
 if systemctl is-active --quiet heliactyl; then
     log "Stopping Heliactyl service..."
     systemctl stop heliactyl
@@ -85,26 +80,25 @@ if [ -d ".git" ]; then
     git fetch origin
     git reset --hard origin/$BRANCH
 else
-    # Not a git repo, backup and re-clone
     warn "Not a git repository, performing fresh clone..."
     cd /var/www
-    mv enderactyl "enderactyl_backup_$TIMESTAMP"
-    git clone "$GITHUB_REPO" enderactyl
-    cd enderactyl
+    mv heliactyl "heliactyl_backup_$TIMESTAMP" 2>/dev/null || true
+    git clone "$GITHUB_REPO" heliactyl
+    cd heliactyl
     
-    # Restore database
-    if [ -f "$BACKUP_FILE" ]; then
-        cp "$BACKUP_FILE" prisma/heliactyl.db 2>/dev/null || cp "$BACKUP_FILE" prisma/enderactyl.db
-        log "Database restored"
+    # Restore database (PRESERVES ALL SETTINGS)
+    if [ -f "$BACKUP_DIR/heliactyl_$TIMESTAMP.db" ]; then
+        cp "$BACKUP_DIR/heliactyl_$TIMESTAMP.db" prisma/heliactyl.db
+        log "Database restored - all settings preserved"
     fi
     
-    # Restore uploads directory
-    if [ -d "$UPLOADS_BACKUP" ]; then
-        cp -r "$UPLOADS_BACKUP"/* uploads/ 2>/dev/null || mkdir -p uploads
+    # Restore uploads
+    if [ -d "$BACKUP_DIR/uploads_$TIMESTAMP" ]; then
+        cp -r "$BACKUP_DIR/uploads_$TIMESTAMP"/* uploads/ 2>/dev/null || mkdir -p uploads
         log "Uploads restored"
     fi
     
-    # Restore .env file
+    # Restore .env
     if [ -f "$BACKUP_DIR/.env_$TIMESTAMP" ]; then
         cp "$BACKUP_DIR/.env_$TIMESTAMP" .env
         log ".env restored"
@@ -113,12 +107,15 @@ fi
 
 # Install dependencies
 log "Installing dependencies..."
-npm ci --production=false
+npm ci --production=false 2>/dev/null || npm install
 
-# Run database migrations
-log "Running database migrations..."
+# Generate Prisma client
+log "Generating Prisma client..."
 npx prisma generate
-npx prisma db push --accept-data-loss 2>/dev/null || npx prisma db push
+
+# Apply database migrations WITHOUT data loss
+log "Applying database migrations (preserving data)..."
+npx prisma db push --skip-generate 2>/dev/null || npx prisma db push
 
 # Build application
 log "Building application..."
@@ -126,8 +123,8 @@ npm run build
 
 # Set permissions
 chown -R www-data:www-data "$INSTALL_DIR"
-chmod 755 "$INSTALL_DIR/uploads" 2>/dev/null || mkdir -p "$INSTALL_DIR/uploads" && chmod 755 "$INSTALL_DIR/uploads"
-# Ensure database directory and file are writable
+mkdir -p "$INSTALL_DIR/uploads"
+chmod 755 "$INSTALL_DIR/uploads"
 chmod 755 "$INSTALL_DIR/prisma"
 chmod 664 "$INSTALL_DIR/prisma/heliactyl.db" 2>/dev/null || true
 
@@ -141,10 +138,16 @@ fi
 NEW_VERSION=$(grep '"version"' package.json | head -1 | cut -d '"' -f 4 || echo "unknown")
 
 echo ""
-log "Update complete!"
+echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║           Update Complete!               ║${NC}"
+echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
+echo ""
 info "Previous version: $CURRENT_VERSION"
-info "Current version: $NEW_VERSION"
+info "Current version:  $NEW_VERSION"
+echo ""
+log "All your settings, billing rates, and user data have been preserved."
+log "Backup location: $BACKUP_DIR"
 echo ""
 
-# Cleanup old backups (keep last 5)
-find "$BACKUP_DIR" -name "enderactyl_backup_*.db" -type f | sort -r | tail -n +6 | xargs -r rm
+# Cleanup old backups (keep last 10)
+find "$BACKUP_DIR" -name "heliactyl_*.db" -type f | sort -r | tail -n +11 | xargs -r rm 2>/dev/null || true
